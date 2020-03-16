@@ -32753,7 +32753,8 @@ const App = ({
     }
   }, "Save & Donate"))), !!messages.length && _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("h2", null, "Messages"), messages.map((message, i) => // TODO: format as cards, add timestamp
   _react.default.createElement("p", {
-    key: i
+    key: i,
+    className: message.premium ? 'is-premium' : ''
   }, _react.default.createElement("strong", null, message.sender), ":", _react.default.createElement("br", null), message.text))));
 };
 
@@ -53222,7 +53223,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "61771" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "51122" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
