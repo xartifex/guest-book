@@ -32770,7 +32770,7 @@ const App = ({
 App.propTypes = {
   contract: _propTypes.default.shape({
     addMessage: _propTypes.default.func.isRequired,
-    addPremiumMessage: _propTypes.default.func.isRequired,
+    // addPremiumMessage: PropTypes.func.isRequired,
     getMessages: _propTypes.default.func.isRequired
   }).isRequired,
   nearConfig: _propTypes.default.shape({
@@ -53175,13 +53175,14 @@ async function initContract() {
     },
     ...nearConfig
   }); // Needed to access wallet
+  // const wallet = new nearlib.WalletAccount(near) // todo remove
 
-  const wallet = new nearlib.WalletAccount(near); // Get Account ID – if still unauthorized, it's an empty string
+  const wallet = new WalletConnection(near, nearConfig.contractName); // Get Account ID – if still unauthorized, it's an empty string
 
   const accountId = wallet.getAccountId(); // Initializing our contract APIs by contract name and configuration
+  // const acct = await new nearlib.Account(near.connection, accountId) // todo remove
 
-  const acct = await new nearlib.Account(near.connection, accountId);
-  const contract = await new nearlib.Contract(acct, nearConfig.contractName, {
+  const contract = await new nearlib.Contract(walletConnection.account(), nearConfig.contractName, {
     // View methods are read-only – they don't modify the state, but usually return some value
     viewMethods: ['getMessages'],
     // Change methods can modify the state, but you don't receive the returned value when called
@@ -53235,7 +53236,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "61414" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "59247" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
