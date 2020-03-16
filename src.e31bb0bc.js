@@ -32685,16 +32685,9 @@ const App = ({
     wallet.signOut();
     setAccountId(null);
   }, []);
-  const addPremiumMessage = (0, _react.useCallback)(() => {
-    contract.addPremiumMessage();
-    e.preventDefault();
-    console.log("honua", e);
-  });
   const addMessage = (0, _react.useCallback)(async (text, isPremium) => {
     const BOATLOAD_OF_GAS = '10000000000000000';
-    const PREMIUM_COST = '10000000000000000000000'; //nearlib.utils.format.parseNearAmount('0.01');
-    // await contract.addMessage({text}, BOATLOAD_OF_GAS, isPremium ? PREMIUM_COST : '0');
-
+    const PREMIUM_COST = '10000000000000000000000';
     await contract.addMessage({
       text
     }, BOATLOAD_OF_GAS, isPremium ? PREMIUM_COST.toString() : '0');
@@ -32713,37 +32706,12 @@ const App = ({
     onClick: signIn
   }, "Log in")), accountId && _react.default.createElement("form", {
     onSubmit: async e => {
-      console.log("aloha e", e);
-      console.log("aloha e.target", e.target);
-      console.log("aloha e.currentTarget", e.currentTarget);
       e.preventDefault(); // TODO: optimistically update page with new message,
       // update blockchain data in background
       // add uuid to each message, so we know which one is already known
 
       const input = e.target.elements.message;
-      console.log("hate this target", e.target);
-      console.log("hate this", e.target.elements);
-      input.disabled = true; // Submits a new message
-      // function doSubmitMessage(premium = false) {
-      //     let text = $('#text-message').val();
-      //     $('#text-message').val('');
-      //     // Calls the addMessage on the contract with arguments {text=text}.
-      //     // TODO: Refactor gas/amount args to be named
-      //     contract.addMessage({text}, BOATLOAD_OF_GAS, premium ? PREMIUM_COST : '0')
-      //         .then(() => {
-      //             // Starting refresh animation
-      //             $('#refresh-span').addClass(animateClass);
-      //             refreshMessages();
-      //         })
-      //         .catch(console.error);
-      // }
-      // await contract.addMessage({ text: input.value }, BOATLOAD_OF_GAS, premium ? PREMIUM_COST : '0')
-      // const messages = await contract.getMessages()
-      //
-      // setMessages(messages)
-
       input.value = '';
-      input.disabled = false;
       input.focus();
     }
   }, _react.default.createElement("label", {
@@ -32770,9 +32738,6 @@ const App = ({
       marginLeft: '0.5em'
     },
     onClick: e => {
-      console.log("aloha eee", e);
-      console.log("aloha eee", e.target); // addMessage(input.value, false)
-
       addMessage(inputText, false);
       e.stopPropagation();
     }
@@ -32783,10 +32748,8 @@ const App = ({
       marginLeft: '0.5em'
     },
     onClick: e => {
-      console.log("aloha eeeeeee", e);
-      console.log("aloha eeeeeee", e.target.elements);
       addMessage(inputText, true);
-      e.stopPropagation(); // addMessage(input.value, true)
+      e.stopPropagation();
     }
   }, "Save & Donate"))), !!messages.length && _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("h2", null, "Messages"), messages.map((message, i) => // TODO: format as cards, add timestamp
   _react.default.createElement("p", {
@@ -32813,9 +32776,7 @@ App.propTypes = {
 var _default = App;
 exports.default = _default;
 },{"react":"../node_modules/react/index.js","prop-types":"../node_modules/prop-types/index.js"}],"config.js":[function(require,module,exports) {
-// console.log("aloha", process.env.CONTRACT_NAME);
 const CONTRACT_NAME = undefined || 'artist';
-console.log("aloha", CONTRACT_NAME);
 
 function getConfig(env) {
   switch (env) {
@@ -53202,13 +53163,10 @@ async function initContract() {
     },
     ...nearConfig
   }); // Needed to access wallet
-  // const wallet = new nearlib.WalletAccount(near) // todo remove
-  // const walletConnection = new nearlib.WalletConnection(near, nearConfig.contractName);
 
   const walletConnection = new nearlib.WalletConnection(near); // Get Account ID – if still unauthorized, it's an empty string
 
   const accountId = walletConnection.getAccountId(); // Initializing our contract APIs by contract name and configuration
-  // const acct = await new nearlib.Account(near.connection, accountId) // todo remove
 
   const contract = await new nearlib.Contract(walletConnection.account(), nearConfig.contractName, {
     // View methods are read-only – they don't modify the state, but usually return some value
@@ -53264,7 +53222,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62166" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "61771" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
