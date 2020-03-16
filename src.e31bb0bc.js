@@ -32648,7 +32648,735 @@ if ("development" !== 'production') {
   // http://fb.me/prop-types-in-prod
   module.exports = require('./factoryWithThrowingShims')();
 }
-},{"react-is":"../node_modules/react-is/index.js","./factoryWithTypeCheckers":"../node_modules/prop-types/factoryWithTypeCheckers.js"}],"App.js":[function(require,module,exports) {
+},{"react-is":"../node_modules/react-is/index.js","./factoryWithTypeCheckers":"../node_modules/prop-types/factoryWithTypeCheckers.js"}],"../node_modules/regenerator-runtime/runtime.js":[function(require,module,exports) {
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+var runtime = (function (exports) {
+  "use strict";
+
+  var Op = Object.prototype;
+  var hasOwn = Op.hasOwnProperty;
+  var undefined; // More compressible than void 0.
+  var $Symbol = typeof Symbol === "function" ? Symbol : {};
+  var iteratorSymbol = $Symbol.iterator || "@@iterator";
+  var asyncIteratorSymbol = $Symbol.asyncIterator || "@@asyncIterator";
+  var toStringTagSymbol = $Symbol.toStringTag || "@@toStringTag";
+
+  function wrap(innerFn, outerFn, self, tryLocsList) {
+    // If outerFn provided and outerFn.prototype is a Generator, then outerFn.prototype instanceof Generator.
+    var protoGenerator = outerFn && outerFn.prototype instanceof Generator ? outerFn : Generator;
+    var generator = Object.create(protoGenerator.prototype);
+    var context = new Context(tryLocsList || []);
+
+    // The ._invoke method unifies the implementations of the .next,
+    // .throw, and .return methods.
+    generator._invoke = makeInvokeMethod(innerFn, self, context);
+
+    return generator;
+  }
+  exports.wrap = wrap;
+
+  // Try/catch helper to minimize deoptimizations. Returns a completion
+  // record like context.tryEntries[i].completion. This interface could
+  // have been (and was previously) designed to take a closure to be
+  // invoked without arguments, but in all the cases we care about we
+  // already have an existing method we want to call, so there's no need
+  // to create a new function object. We can even get away with assuming
+  // the method takes exactly one argument, since that happens to be true
+  // in every case, so we don't have to touch the arguments object. The
+  // only additional allocation required is the completion record, which
+  // has a stable shape and so hopefully should be cheap to allocate.
+  function tryCatch(fn, obj, arg) {
+    try {
+      return { type: "normal", arg: fn.call(obj, arg) };
+    } catch (err) {
+      return { type: "throw", arg: err };
+    }
+  }
+
+  var GenStateSuspendedStart = "suspendedStart";
+  var GenStateSuspendedYield = "suspendedYield";
+  var GenStateExecuting = "executing";
+  var GenStateCompleted = "completed";
+
+  // Returning this object from the innerFn has the same effect as
+  // breaking out of the dispatch switch statement.
+  var ContinueSentinel = {};
+
+  // Dummy constructor functions that we use as the .constructor and
+  // .constructor.prototype properties for functions that return Generator
+  // objects. For full spec compliance, you may wish to configure your
+  // minifier not to mangle the names of these two functions.
+  function Generator() {}
+  function GeneratorFunction() {}
+  function GeneratorFunctionPrototype() {}
+
+  // This is a polyfill for %IteratorPrototype% for environments that
+  // don't natively support it.
+  var IteratorPrototype = {};
+  IteratorPrototype[iteratorSymbol] = function () {
+    return this;
+  };
+
+  var getProto = Object.getPrototypeOf;
+  var NativeIteratorPrototype = getProto && getProto(getProto(values([])));
+  if (NativeIteratorPrototype &&
+      NativeIteratorPrototype !== Op &&
+      hasOwn.call(NativeIteratorPrototype, iteratorSymbol)) {
+    // This environment has a native %IteratorPrototype%; use it instead
+    // of the polyfill.
+    IteratorPrototype = NativeIteratorPrototype;
+  }
+
+  var Gp = GeneratorFunctionPrototype.prototype =
+    Generator.prototype = Object.create(IteratorPrototype);
+  GeneratorFunction.prototype = Gp.constructor = GeneratorFunctionPrototype;
+  GeneratorFunctionPrototype.constructor = GeneratorFunction;
+  GeneratorFunctionPrototype[toStringTagSymbol] =
+    GeneratorFunction.displayName = "GeneratorFunction";
+
+  // Helper for defining the .next, .throw, and .return methods of the
+  // Iterator interface in terms of a single ._invoke method.
+  function defineIteratorMethods(prototype) {
+    ["next", "throw", "return"].forEach(function(method) {
+      prototype[method] = function(arg) {
+        return this._invoke(method, arg);
+      };
+    });
+  }
+
+  exports.isGeneratorFunction = function(genFun) {
+    var ctor = typeof genFun === "function" && genFun.constructor;
+    return ctor
+      ? ctor === GeneratorFunction ||
+        // For the native GeneratorFunction constructor, the best we can
+        // do is to check its .name property.
+        (ctor.displayName || ctor.name) === "GeneratorFunction"
+      : false;
+  };
+
+  exports.mark = function(genFun) {
+    if (Object.setPrototypeOf) {
+      Object.setPrototypeOf(genFun, GeneratorFunctionPrototype);
+    } else {
+      genFun.__proto__ = GeneratorFunctionPrototype;
+      if (!(toStringTagSymbol in genFun)) {
+        genFun[toStringTagSymbol] = "GeneratorFunction";
+      }
+    }
+    genFun.prototype = Object.create(Gp);
+    return genFun;
+  };
+
+  // Within the body of any async function, `await x` is transformed to
+  // `yield regeneratorRuntime.awrap(x)`, so that the runtime can test
+  // `hasOwn.call(value, "__await")` to determine if the yielded value is
+  // meant to be awaited.
+  exports.awrap = function(arg) {
+    return { __await: arg };
+  };
+
+  function AsyncIterator(generator) {
+    function invoke(method, arg, resolve, reject) {
+      var record = tryCatch(generator[method], generator, arg);
+      if (record.type === "throw") {
+        reject(record.arg);
+      } else {
+        var result = record.arg;
+        var value = result.value;
+        if (value &&
+            typeof value === "object" &&
+            hasOwn.call(value, "__await")) {
+          return Promise.resolve(value.__await).then(function(value) {
+            invoke("next", value, resolve, reject);
+          }, function(err) {
+            invoke("throw", err, resolve, reject);
+          });
+        }
+
+        return Promise.resolve(value).then(function(unwrapped) {
+          // When a yielded Promise is resolved, its final value becomes
+          // the .value of the Promise<{value,done}> result for the
+          // current iteration.
+          result.value = unwrapped;
+          resolve(result);
+        }, function(error) {
+          // If a rejected Promise was yielded, throw the rejection back
+          // into the async generator function so it can be handled there.
+          return invoke("throw", error, resolve, reject);
+        });
+      }
+    }
+
+    var previousPromise;
+
+    function enqueue(method, arg) {
+      function callInvokeWithMethodAndArg() {
+        return new Promise(function(resolve, reject) {
+          invoke(method, arg, resolve, reject);
+        });
+      }
+
+      return previousPromise =
+        // If enqueue has been called before, then we want to wait until
+        // all previous Promises have been resolved before calling invoke,
+        // so that results are always delivered in the correct order. If
+        // enqueue has not been called before, then it is important to
+        // call invoke immediately, without waiting on a callback to fire,
+        // so that the async generator function has the opportunity to do
+        // any necessary setup in a predictable way. This predictability
+        // is why the Promise constructor synchronously invokes its
+        // executor callback, and why async functions synchronously
+        // execute code before the first await. Since we implement simple
+        // async functions in terms of async generators, it is especially
+        // important to get this right, even though it requires care.
+        previousPromise ? previousPromise.then(
+          callInvokeWithMethodAndArg,
+          // Avoid propagating failures to Promises returned by later
+          // invocations of the iterator.
+          callInvokeWithMethodAndArg
+        ) : callInvokeWithMethodAndArg();
+    }
+
+    // Define the unified helper method that is used to implement .next,
+    // .throw, and .return (see defineIteratorMethods).
+    this._invoke = enqueue;
+  }
+
+  defineIteratorMethods(AsyncIterator.prototype);
+  AsyncIterator.prototype[asyncIteratorSymbol] = function () {
+    return this;
+  };
+  exports.AsyncIterator = AsyncIterator;
+
+  // Note that simple async functions are implemented on top of
+  // AsyncIterator objects; they just return a Promise for the value of
+  // the final result produced by the iterator.
+  exports.async = function(innerFn, outerFn, self, tryLocsList) {
+    var iter = new AsyncIterator(
+      wrap(innerFn, outerFn, self, tryLocsList)
+    );
+
+    return exports.isGeneratorFunction(outerFn)
+      ? iter // If outerFn is a generator, return the full iterator.
+      : iter.next().then(function(result) {
+          return result.done ? result.value : iter.next();
+        });
+  };
+
+  function makeInvokeMethod(innerFn, self, context) {
+    var state = GenStateSuspendedStart;
+
+    return function invoke(method, arg) {
+      if (state === GenStateExecuting) {
+        throw new Error("Generator is already running");
+      }
+
+      if (state === GenStateCompleted) {
+        if (method === "throw") {
+          throw arg;
+        }
+
+        // Be forgiving, per 25.3.3.3.3 of the spec:
+        // https://people.mozilla.org/~jorendorff/es6-draft.html#sec-generatorresume
+        return doneResult();
+      }
+
+      context.method = method;
+      context.arg = arg;
+
+      while (true) {
+        var delegate = context.delegate;
+        if (delegate) {
+          var delegateResult = maybeInvokeDelegate(delegate, context);
+          if (delegateResult) {
+            if (delegateResult === ContinueSentinel) continue;
+            return delegateResult;
+          }
+        }
+
+        if (context.method === "next") {
+          // Setting context._sent for legacy support of Babel's
+          // function.sent implementation.
+          context.sent = context._sent = context.arg;
+
+        } else if (context.method === "throw") {
+          if (state === GenStateSuspendedStart) {
+            state = GenStateCompleted;
+            throw context.arg;
+          }
+
+          context.dispatchException(context.arg);
+
+        } else if (context.method === "return") {
+          context.abrupt("return", context.arg);
+        }
+
+        state = GenStateExecuting;
+
+        var record = tryCatch(innerFn, self, context);
+        if (record.type === "normal") {
+          // If an exception is thrown from innerFn, we leave state ===
+          // GenStateExecuting and loop back for another invocation.
+          state = context.done
+            ? GenStateCompleted
+            : GenStateSuspendedYield;
+
+          if (record.arg === ContinueSentinel) {
+            continue;
+          }
+
+          return {
+            value: record.arg,
+            done: context.done
+          };
+
+        } else if (record.type === "throw") {
+          state = GenStateCompleted;
+          // Dispatch the exception by looping back around to the
+          // context.dispatchException(context.arg) call above.
+          context.method = "throw";
+          context.arg = record.arg;
+        }
+      }
+    };
+  }
+
+  // Call delegate.iterator[context.method](context.arg) and handle the
+  // result, either by returning a { value, done } result from the
+  // delegate iterator, or by modifying context.method and context.arg,
+  // setting context.delegate to null, and returning the ContinueSentinel.
+  function maybeInvokeDelegate(delegate, context) {
+    var method = delegate.iterator[context.method];
+    if (method === undefined) {
+      // A .throw or .return when the delegate iterator has no .throw
+      // method always terminates the yield* loop.
+      context.delegate = null;
+
+      if (context.method === "throw") {
+        // Note: ["return"] must be used for ES3 parsing compatibility.
+        if (delegate.iterator["return"]) {
+          // If the delegate iterator has a return method, give it a
+          // chance to clean up.
+          context.method = "return";
+          context.arg = undefined;
+          maybeInvokeDelegate(delegate, context);
+
+          if (context.method === "throw") {
+            // If maybeInvokeDelegate(context) changed context.method from
+            // "return" to "throw", let that override the TypeError below.
+            return ContinueSentinel;
+          }
+        }
+
+        context.method = "throw";
+        context.arg = new TypeError(
+          "The iterator does not provide a 'throw' method");
+      }
+
+      return ContinueSentinel;
+    }
+
+    var record = tryCatch(method, delegate.iterator, context.arg);
+
+    if (record.type === "throw") {
+      context.method = "throw";
+      context.arg = record.arg;
+      context.delegate = null;
+      return ContinueSentinel;
+    }
+
+    var info = record.arg;
+
+    if (! info) {
+      context.method = "throw";
+      context.arg = new TypeError("iterator result is not an object");
+      context.delegate = null;
+      return ContinueSentinel;
+    }
+
+    if (info.done) {
+      // Assign the result of the finished delegate to the temporary
+      // variable specified by delegate.resultName (see delegateYield).
+      context[delegate.resultName] = info.value;
+
+      // Resume execution at the desired location (see delegateYield).
+      context.next = delegate.nextLoc;
+
+      // If context.method was "throw" but the delegate handled the
+      // exception, let the outer generator proceed normally. If
+      // context.method was "next", forget context.arg since it has been
+      // "consumed" by the delegate iterator. If context.method was
+      // "return", allow the original .return call to continue in the
+      // outer generator.
+      if (context.method !== "return") {
+        context.method = "next";
+        context.arg = undefined;
+      }
+
+    } else {
+      // Re-yield the result returned by the delegate method.
+      return info;
+    }
+
+    // The delegate iterator is finished, so forget it and continue with
+    // the outer generator.
+    context.delegate = null;
+    return ContinueSentinel;
+  }
+
+  // Define Generator.prototype.{next,throw,return} in terms of the
+  // unified ._invoke helper method.
+  defineIteratorMethods(Gp);
+
+  Gp[toStringTagSymbol] = "Generator";
+
+  // A Generator should always return itself as the iterator object when the
+  // @@iterator function is called on it. Some browsers' implementations of the
+  // iterator prototype chain incorrectly implement this, causing the Generator
+  // object to not be returned from this call. This ensures that doesn't happen.
+  // See https://github.com/facebook/regenerator/issues/274 for more details.
+  Gp[iteratorSymbol] = function() {
+    return this;
+  };
+
+  Gp.toString = function() {
+    return "[object Generator]";
+  };
+
+  function pushTryEntry(locs) {
+    var entry = { tryLoc: locs[0] };
+
+    if (1 in locs) {
+      entry.catchLoc = locs[1];
+    }
+
+    if (2 in locs) {
+      entry.finallyLoc = locs[2];
+      entry.afterLoc = locs[3];
+    }
+
+    this.tryEntries.push(entry);
+  }
+
+  function resetTryEntry(entry) {
+    var record = entry.completion || {};
+    record.type = "normal";
+    delete record.arg;
+    entry.completion = record;
+  }
+
+  function Context(tryLocsList) {
+    // The root entry object (effectively a try statement without a catch
+    // or a finally block) gives us a place to store values thrown from
+    // locations where there is no enclosing try statement.
+    this.tryEntries = [{ tryLoc: "root" }];
+    tryLocsList.forEach(pushTryEntry, this);
+    this.reset(true);
+  }
+
+  exports.keys = function(object) {
+    var keys = [];
+    for (var key in object) {
+      keys.push(key);
+    }
+    keys.reverse();
+
+    // Rather than returning an object with a next method, we keep
+    // things simple and return the next function itself.
+    return function next() {
+      while (keys.length) {
+        var key = keys.pop();
+        if (key in object) {
+          next.value = key;
+          next.done = false;
+          return next;
+        }
+      }
+
+      // To avoid creating an additional object, we just hang the .value
+      // and .done properties off the next function object itself. This
+      // also ensures that the minifier will not anonymize the function.
+      next.done = true;
+      return next;
+    };
+  };
+
+  function values(iterable) {
+    if (iterable) {
+      var iteratorMethod = iterable[iteratorSymbol];
+      if (iteratorMethod) {
+        return iteratorMethod.call(iterable);
+      }
+
+      if (typeof iterable.next === "function") {
+        return iterable;
+      }
+
+      if (!isNaN(iterable.length)) {
+        var i = -1, next = function next() {
+          while (++i < iterable.length) {
+            if (hasOwn.call(iterable, i)) {
+              next.value = iterable[i];
+              next.done = false;
+              return next;
+            }
+          }
+
+          next.value = undefined;
+          next.done = true;
+
+          return next;
+        };
+
+        return next.next = next;
+      }
+    }
+
+    // Return an iterator with no values.
+    return { next: doneResult };
+  }
+  exports.values = values;
+
+  function doneResult() {
+    return { value: undefined, done: true };
+  }
+
+  Context.prototype = {
+    constructor: Context,
+
+    reset: function(skipTempReset) {
+      this.prev = 0;
+      this.next = 0;
+      // Resetting context._sent for legacy support of Babel's
+      // function.sent implementation.
+      this.sent = this._sent = undefined;
+      this.done = false;
+      this.delegate = null;
+
+      this.method = "next";
+      this.arg = undefined;
+
+      this.tryEntries.forEach(resetTryEntry);
+
+      if (!skipTempReset) {
+        for (var name in this) {
+          // Not sure about the optimal order of these conditions:
+          if (name.charAt(0) === "t" &&
+              hasOwn.call(this, name) &&
+              !isNaN(+name.slice(1))) {
+            this[name] = undefined;
+          }
+        }
+      }
+    },
+
+    stop: function() {
+      this.done = true;
+
+      var rootEntry = this.tryEntries[0];
+      var rootRecord = rootEntry.completion;
+      if (rootRecord.type === "throw") {
+        throw rootRecord.arg;
+      }
+
+      return this.rval;
+    },
+
+    dispatchException: function(exception) {
+      if (this.done) {
+        throw exception;
+      }
+
+      var context = this;
+      function handle(loc, caught) {
+        record.type = "throw";
+        record.arg = exception;
+        context.next = loc;
+
+        if (caught) {
+          // If the dispatched exception was caught by a catch block,
+          // then let that catch block handle the exception normally.
+          context.method = "next";
+          context.arg = undefined;
+        }
+
+        return !! caught;
+      }
+
+      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
+        var entry = this.tryEntries[i];
+        var record = entry.completion;
+
+        if (entry.tryLoc === "root") {
+          // Exception thrown outside of any try block that could handle
+          // it, so set the completion value of the entire function to
+          // throw the exception.
+          return handle("end");
+        }
+
+        if (entry.tryLoc <= this.prev) {
+          var hasCatch = hasOwn.call(entry, "catchLoc");
+          var hasFinally = hasOwn.call(entry, "finallyLoc");
+
+          if (hasCatch && hasFinally) {
+            if (this.prev < entry.catchLoc) {
+              return handle(entry.catchLoc, true);
+            } else if (this.prev < entry.finallyLoc) {
+              return handle(entry.finallyLoc);
+            }
+
+          } else if (hasCatch) {
+            if (this.prev < entry.catchLoc) {
+              return handle(entry.catchLoc, true);
+            }
+
+          } else if (hasFinally) {
+            if (this.prev < entry.finallyLoc) {
+              return handle(entry.finallyLoc);
+            }
+
+          } else {
+            throw new Error("try statement without catch or finally");
+          }
+        }
+      }
+    },
+
+    abrupt: function(type, arg) {
+      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
+        var entry = this.tryEntries[i];
+        if (entry.tryLoc <= this.prev &&
+            hasOwn.call(entry, "finallyLoc") &&
+            this.prev < entry.finallyLoc) {
+          var finallyEntry = entry;
+          break;
+        }
+      }
+
+      if (finallyEntry &&
+          (type === "break" ||
+           type === "continue") &&
+          finallyEntry.tryLoc <= arg &&
+          arg <= finallyEntry.finallyLoc) {
+        // Ignore the finally entry if control is not jumping to a
+        // location outside the try/catch block.
+        finallyEntry = null;
+      }
+
+      var record = finallyEntry ? finallyEntry.completion : {};
+      record.type = type;
+      record.arg = arg;
+
+      if (finallyEntry) {
+        this.method = "next";
+        this.next = finallyEntry.finallyLoc;
+        return ContinueSentinel;
+      }
+
+      return this.complete(record);
+    },
+
+    complete: function(record, afterLoc) {
+      if (record.type === "throw") {
+        throw record.arg;
+      }
+
+      if (record.type === "break" ||
+          record.type === "continue") {
+        this.next = record.arg;
+      } else if (record.type === "return") {
+        this.rval = this.arg = record.arg;
+        this.method = "return";
+        this.next = "end";
+      } else if (record.type === "normal" && afterLoc) {
+        this.next = afterLoc;
+      }
+
+      return ContinueSentinel;
+    },
+
+    finish: function(finallyLoc) {
+      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
+        var entry = this.tryEntries[i];
+        if (entry.finallyLoc === finallyLoc) {
+          this.complete(entry.completion, entry.afterLoc);
+          resetTryEntry(entry);
+          return ContinueSentinel;
+        }
+      }
+    },
+
+    "catch": function(tryLoc) {
+      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
+        var entry = this.tryEntries[i];
+        if (entry.tryLoc === tryLoc) {
+          var record = entry.completion;
+          if (record.type === "throw") {
+            var thrown = record.arg;
+            resetTryEntry(entry);
+          }
+          return thrown;
+        }
+      }
+
+      // The context.catch method must only be called with a location
+      // argument that corresponds to a known catch block.
+      throw new Error("illegal catch attempt");
+    },
+
+    delegateYield: function(iterable, resultName, nextLoc) {
+      this.delegate = {
+        iterator: values(iterable),
+        resultName: resultName,
+        nextLoc: nextLoc
+      };
+
+      if (this.method === "next") {
+        // Deliberately forget the last sent value so that we don't
+        // accidentally pass it on to the delegate.
+        this.arg = undefined;
+      }
+
+      return ContinueSentinel;
+    }
+  };
+
+  // Regardless of whether this script is executing as a CommonJS module
+  // or not, return the runtime object so that we can declare the variable
+  // regeneratorRuntime in the outer scope, which allows this module to be
+  // injected easily by `bin/regenerator --include-runtime script.js`.
+  return exports;
+
+}(
+  // If this script is executing as a CommonJS module, use module.exports
+  // as the regeneratorRuntime namespace. Otherwise create a new empty
+  // object. Either way, the resulting object will be used to initialize
+  // the regeneratorRuntime variable at the top of this file.
+  typeof module === "object" ? module.exports : {}
+));
+
+try {
+  regeneratorRuntime = runtime;
+} catch (accidentalStrictMode) {
+  // This module should not be running in strict mode, so the above
+  // assignment should always work unless something is misconfigured. Just
+  // in case runtime.js accidentally runs in strict mode, we can escape
+  // strict mode using a global Function call. This could conceivably fail
+  // if a Content Security Policy forbids using Function, but in that case
+  // the proper solution is to fix the accidental strict mode problem. If
+  // you've misconfigured your bundler to force strict mode and applied a
+  // CSP to forbid Function, and you're not willing to fix either of those
+  // problems, please detail your unique predicament in a GitHub issue.
+  Function("r", "regeneratorRuntime = r")(runtime);
+}
+
+},{}],"App.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32659,6 +33387,8 @@ exports.default = void 0;
 var _react = _interopRequireWildcard(require("react"));
 
 var _propTypes = _interopRequireDefault(require("prop-types"));
+
+require("regenerator-runtime/runtime");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -32703,20 +33433,19 @@ const App = ({
 
       const input = e.target.elements.message;
       input.disabled = true; // Submits a new message
-
-      function doSubmitMessage(premium = false) {
-        let text = $('#text-message').val();
-        $('#text-message').val(''); // Calls the addMessage on the contract with arguments {text=text}.
-        // TODO: Refactor gas/amount args to be named
-
-        contract.addMessage({
-          text
-        }, BOATLOAD_OF_GAS, premium ? PREMIUM_COST : '0').then(() => {
-          // Starting refresh animation
-          $('#refresh-span').addClass(animateClass);
-          refreshMessages();
-        }).catch(console.error);
-      }
+      // function doSubmitMessage(premium = false) {
+      //     let text = $('#text-message').val();
+      //     $('#text-message').val('');
+      //     // Calls the addMessage on the contract with arguments {text=text}.
+      //     // TODO: Refactor gas/amount args to be named
+      //     contract.addMessage({text}, BOATLOAD_OF_GAS, premium ? PREMIUM_COST : '0')
+      //         .then(() => {
+      //             // Starting refresh animation
+      //             $('#refresh-span').addClass(animateClass);
+      //             refreshMessages();
+      //         })
+      //         .catch(console.error);
+      // }
 
       const BOATLOAD_OF_GAS = '10000000000000000';
       const PREMIUM_COST = nearlib.utils.format.parseNearAmount('0.01');
@@ -32777,7 +33506,7 @@ App.propTypes = {
 };
 var _default = App;
 exports.default = _default;
-},{"react":"../node_modules/react/index.js","prop-types":"../node_modules/prop-types/index.js"}],"config.js":[function(require,module,exports) {
+},{"react":"../node_modules/react/index.js","prop-types":"../node_modules/prop-types/index.js","regenerator-runtime/runtime":"../node_modules/regenerator-runtime/runtime.js"}],"config.js":[function(require,module,exports) {
 // console.log("aloha", process.env.CONTRACT_NAME);
 const CONTRACT_NAME = undefined || 'artist';
 console.log("aloha", CONTRACT_NAME);
@@ -41355,9 +42084,11 @@ const http_errors_1 = __importDefault(require("http-errors"));
 // TODO: Move into separate module and exclude node-fetch kludge from browser build
 let fetch;
 if (typeof window === 'undefined' || window.name === 'nodejs') {
+    /* eslint-disable @typescript-eslint/no-var-requires */
     const nodeFetch = require('node-fetch');
     const http = require('http');
     const https = require('https');
+    /* eslint-enable @typescript-eslint/no-var-requires */
     const httpAgent = new http.Agent({ keepAlive: true });
     const httpsAgent = new https.Agent({ keepAlive: true });
     function agent(_parsedURL) {
@@ -41369,7 +42100,7 @@ if (typeof window === 'undefined' || window.name === 'nodejs') {
         }
     }
     fetch = function (resource, init) {
-        return nodeFetch(resource, { agent, ...init });
+        return nodeFetch(resource, { agent: agent(new URL(resource)), ...init });
     };
 }
 else {
@@ -45938,7 +46669,7 @@ class BinaryReader {
         return new bn_js_1.default(buf, 'le');
     }
     read_buffer(len) {
-        if (len >= this.buf.length || (this.offset + len) > this.buf.length) {
+        if ((this.offset + len) > this.buf.length) {
             throw new BorshError(`Expected buffer length ${len} isn't within bounds`);
         }
         const result = this.buf.slice(this.offset, this.offset + len);
@@ -46867,153 +47598,13 @@ var global = arguments[3];
 },{}],"../node_modules/nearlib/lib/generated/rpc_error_schema.json":[function(require,module,exports) {
 module.exports = {
     "schema": {
-        "InvalidIteratorIndex": {
-            "name": "InvalidIteratorIndex",
-            "subtypes": [],
-            "props": {
-                "iterator_index": ""
-            }
-        },
-        "InvalidPublicKey": {
-            "name": "InvalidPublicKey",
-            "subtypes": [],
-            "props": {}
-        },
-        "CannotAppendActionToJointPromise": {
-            "name": "CannotAppendActionToJointPromise",
-            "subtypes": [],
-            "props": {}
-        },
-        "Instantiate": {
-            "name": "Instantiate",
-            "subtypes": [],
-            "props": {}
-        },
-        "MemoryAccessViolation": {
-            "name": "MemoryAccessViolation",
-            "subtypes": [],
-            "props": {}
-        },
         "BadUTF16": {
             "name": "BadUTF16",
             "subtypes": [],
             "props": {}
         },
-        "LinkError": {
-            "name": "LinkError",
-            "subtypes": [],
-            "props": {
-                "msg": ""
-            }
-        },
-        "StackHeightInstrumentation": {
-            "name": "StackHeightInstrumentation",
-            "subtypes": [],
-            "props": {}
-        },
-        "WasmerCompileError": {
-            "name": "WasmerCompileError",
-            "subtypes": [],
-            "props": {
-                "msg": ""
-            }
-        },
-        "Memory": {
-            "name": "Memory",
-            "subtypes": [],
-            "props": {}
-        },
-        "InvalidAccountId": {
-            "name": "InvalidAccountId",
-            "subtypes": [],
-            "props": {}
-        },
-        "ResolveError": {
-            "name": "ResolveError",
-            "subtypes": [
-                "MethodEmptyName",
-                "MethodUTF8Error",
-                "MethodNotFound",
-                "MethodInvalidSignature"
-            ],
-            "props": {}
-        },
-        "InternalMemoryDeclared": {
-            "name": "InternalMemoryDeclared",
-            "subtypes": [],
-            "props": {}
-        },
-        "GasInstrumentation": {
-            "name": "GasInstrumentation",
-            "subtypes": [],
-            "props": {}
-        },
-        "MethodUTF8Error": {
-            "name": "MethodUTF8Error",
-            "subtypes": [],
-            "props": {}
-        },
-        "PrepareError": {
-            "name": "PrepareError",
-            "subtypes": [
-                "Serialization",
-                "Deserialization",
-                "InternalMemoryDeclared",
-                "GasInstrumentation",
-                "StackHeightInstrumentation",
-                "Instantiate",
-                "Memory"
-            ],
-            "props": {}
-        },
-        "CannotReturnJointPromise": {
-            "name": "CannotReturnJointPromise",
-            "subtypes": [],
-            "props": {}
-        },
-        "MethodInvalidSignature": {
-            "name": "MethodInvalidSignature",
-            "subtypes": [],
-            "props": {}
-        },
-        "InvalidRegisterId": {
-            "name": "InvalidRegisterId",
-            "subtypes": [],
-            "props": {
-                "register_id": ""
-            }
-        },
-        "GasExceeded": {
-            "name": "GasExceeded",
-            "subtypes": [],
-            "props": {}
-        },
-        "FunctionCall": {
-            "name": "FunctionCall",
-            "subtypes": [
-                "FunctionExecError",
-                "StorageError"
-            ],
-            "props": {}
-        },
-        "Deserialization": {
-            "name": "Deserialization",
-            "subtypes": [],
-            "props": {}
-        },
-        "FunctionExecError": {
-            "name": "FunctionExecError",
-            "subtypes": [
-                "CompilationError",
-                "LinkError",
-                "ResolveError",
-                "WasmTrap",
-                "HostError"
-            ],
-            "props": {}
-        },
-        "GasLimitExceeded": {
-            "name": "GasLimitExceeded",
+        "BadUTF8": {
+            "name": "BadUTF8",
             "subtypes": [],
             "props": {}
         },
@@ -47022,64 +47613,21 @@ module.exports = {
             "subtypes": [],
             "props": {}
         },
-        "Serialization": {
-            "name": "Serialization",
+        "CannotAppendActionToJointPromise": {
+            "name": "CannotAppendActionToJointPromise",
             "subtypes": [],
             "props": {}
         },
-        "WasmTrap": {
-            "name": "WasmTrap",
-            "subtypes": [],
-            "props": {
-                "msg": ""
-            }
-        },
-        "ProhibitedInView": {
-            "name": "ProhibitedInView",
-            "subtypes": [],
-            "props": {
-                "method_name": ""
-            }
-        },
-        "MethodEmptyName": {
-            "name": "MethodEmptyName",
+        "CannotReturnJointPromise": {
+            "name": "CannotReturnJointPromise",
             "subtypes": [],
             "props": {}
         },
-        "EmptyMethodName": {
-            "name": "EmptyMethodName",
-            "subtypes": [],
-            "props": {}
-        },
-        "GuestPanic": {
-            "name": "GuestPanic",
+        "CodeDoesNotExist": {
+            "name": "CodeDoesNotExist",
             "subtypes": [],
             "props": {
-                "panic_msg": ""
-            }
-        },
-        "InvalidMethodName": {
-            "name": "InvalidMethodName",
-            "subtypes": [],
-            "props": {}
-        },
-        "MethodNotFound": {
-            "name": "MethodNotFound",
-            "subtypes": [],
-            "props": {}
-        },
-        "InvalidPromiseResultIndex": {
-            "name": "InvalidPromiseResultIndex",
-            "subtypes": [],
-            "props": {
-                "result_idx": ""
-            }
-        },
-        "IteratorWasInvalidated": {
-            "name": "IteratorWasInvalidated",
-            "subtypes": [],
-            "props": {
-                "iterator_index": ""
+                "account_id": ""
             }
         },
         "CompilationError": {
@@ -47091,30 +47639,55 @@ module.exports = {
             ],
             "props": {}
         },
-        "InvalidPromiseIndex": {
-            "name": "InvalidPromiseIndex",
+        "ContractSizeExceeded": {
+            "name": "ContractSizeExceeded",
             "subtypes": [],
             "props": {
-                "promise_idx": ""
+                "limit": "",
+                "size": ""
             }
         },
-        "BadUTF8": {
-            "name": "BadUTF8",
+        "Deserialization": {
+            "name": "Deserialization",
             "subtypes": [],
             "props": {}
         },
-        "InvalidReceiptIndex": {
-            "name": "InvalidReceiptIndex",
+        "EmptyMethodName": {
+            "name": "EmptyMethodName",
             "subtypes": [],
-            "props": {
-                "receipt_index": ""
-            }
+            "props": {}
         },
-        "CodeDoesNotExist": {
-            "name": "CodeDoesNotExist",
+        "FunctionCallError": {
+            "name": "FunctionCallError",
+            "subtypes": [
+                "CompilationError",
+                "LinkError",
+                "MethodResolveError",
+                "WasmTrap",
+                "HostError"
+            ],
+            "props": {}
+        },
+        "GasExceeded": {
+            "name": "GasExceeded",
+            "subtypes": [],
+            "props": {}
+        },
+        "GasInstrumentation": {
+            "name": "GasInstrumentation",
+            "subtypes": [],
+            "props": {}
+        },
+        "GasLimitExceeded": {
+            "name": "GasLimitExceeded",
+            "subtypes": [],
+            "props": {}
+        },
+        "GuestPanic": {
+            "name": "GuestPanic",
             "subtypes": [],
             "props": {
-                "account_id": ""
+                "panic_msg": ""
             }
         },
         "HostError": {
@@ -47140,8 +47713,21 @@ module.exports = {
                 "InvalidAccountId",
                 "InvalidMethodName",
                 "InvalidPublicKey",
-                "ProhibitedInView"
+                "ProhibitedInView",
+                "NumberOfLogsExceeded",
+                "KeyLengthExceeded",
+                "ValueLengthExceeded",
+                "TotalLogLengthExceeded",
+                "NumberPromisesExceeded",
+                "NumberInputDataDependenciesExceeded",
+                "ReturnedValueLengthExceeded",
+                "ContractSizeExceeded"
             ],
+            "props": {}
+        },
+        "Instantiate": {
+            "name": "Instantiate",
+            "subtypes": [],
             "props": {}
         },
         "IntegerOverflow": {
@@ -47149,114 +47735,256 @@ module.exports = {
             "subtypes": [],
             "props": {}
         },
-        "NotEnoughAllowance": {
-            "name": "NotEnoughAllowance",
+        "InternalMemoryDeclared": {
+            "name": "InternalMemoryDeclared",
+            "subtypes": [],
+            "props": {}
+        },
+        "InvalidAccountId": {
+            "name": "InvalidAccountId",
+            "subtypes": [],
+            "props": {}
+        },
+        "InvalidIteratorIndex": {
+            "name": "InvalidIteratorIndex",
             "subtypes": [],
             "props": {
-                "public_key": "",
-                "allowance": "",
-                "account_id": "",
-                "cost": ""
+                "iterator_index": ""
             }
         },
-        "ReceiverMismatch": {
-            "name": "ReceiverMismatch",
+        "InvalidMethodName": {
+            "name": "InvalidMethodName",
+            "subtypes": [],
+            "props": {}
+        },
+        "InvalidPromiseIndex": {
+            "name": "InvalidPromiseIndex",
             "subtypes": [],
             "props": {
-                "ak_receiver": "",
-                "tx_receiver": ""
+                "promise_idx": ""
             }
         },
-        "DeleteAccountStaking": {
-            "name": "DeleteAccountStaking",
+        "InvalidPromiseResultIndex": {
+            "name": "InvalidPromiseResultIndex",
             "subtypes": [],
             "props": {
-                "account_id": ""
+                "result_idx": ""
             }
         },
-        "TriesToStake": {
-            "name": "TriesToStake",
+        "InvalidPublicKey": {
+            "name": "InvalidPublicKey",
+            "subtypes": [],
+            "props": {}
+        },
+        "InvalidReceiptIndex": {
+            "name": "InvalidReceiptIndex",
             "subtypes": [],
             "props": {
-                "balance": "",
-                "account_id": "",
-                "locked": "",
-                "stake": ""
+                "receipt_index": ""
             }
         },
-        "InvalidReceiverId": {
-            "name": "InvalidReceiverId",
+        "InvalidRegisterId": {
+            "name": "InvalidRegisterId",
             "subtypes": [],
             "props": {
-                "receiver_id": ""
+                "register_id": ""
+            }
+        },
+        "IteratorWasInvalidated": {
+            "name": "IteratorWasInvalidated",
+            "subtypes": [],
+            "props": {
+                "iterator_index": ""
+            }
+        },
+        "KeyLengthExceeded": {
+            "name": "KeyLengthExceeded",
+            "subtypes": [],
+            "props": {
+                "length": "",
+                "limit": ""
+            }
+        },
+        "LinkError": {
+            "name": "LinkError",
+            "subtypes": [],
+            "props": {
+                "msg": ""
+            }
+        },
+        "Memory": {
+            "name": "Memory",
+            "subtypes": [],
+            "props": {}
+        },
+        "MemoryAccessViolation": {
+            "name": "MemoryAccessViolation",
+            "subtypes": [],
+            "props": {}
+        },
+        "MethodEmptyName": {
+            "name": "MethodEmptyName",
+            "subtypes": [],
+            "props": {}
+        },
+        "MethodInvalidSignature": {
+            "name": "MethodInvalidSignature",
+            "subtypes": [],
+            "props": {}
+        },
+        "MethodNotFound": {
+            "name": "MethodNotFound",
+            "subtypes": [],
+            "props": {}
+        },
+        "MethodResolveError": {
+            "name": "MethodResolveError",
+            "subtypes": [
+                "MethodEmptyName",
+                "MethodUTF8Error",
+                "MethodNotFound",
+                "MethodInvalidSignature"
+            ],
+            "props": {}
+        },
+        "MethodUTF8Error": {
+            "name": "MethodUTF8Error",
+            "subtypes": [],
+            "props": {}
+        },
+        "NumberInputDataDependenciesExceeded": {
+            "name": "NumberInputDataDependenciesExceeded",
+            "subtypes": [],
+            "props": {
+                "limit": "",
+                "number_of_input_data_dependencies": ""
+            }
+        },
+        "NumberOfLogsExceeded": {
+            "name": "NumberOfLogsExceeded",
+            "subtypes": [],
+            "props": {
+                "limit": ""
+            }
+        },
+        "NumberPromisesExceeded": {
+            "name": "NumberPromisesExceeded",
+            "subtypes": [],
+            "props": {
+                "limit": "",
+                "number_of_promises": ""
+            }
+        },
+        "PrepareError": {
+            "name": "PrepareError",
+            "subtypes": [
+                "Serialization",
+                "Deserialization",
+                "InternalMemoryDeclared",
+                "GasInstrumentation",
+                "StackHeightInstrumentation",
+                "Instantiate",
+                "Memory"
+            ],
+            "props": {}
+        },
+        "ProhibitedInView": {
+            "name": "ProhibitedInView",
+            "subtypes": [],
+            "props": {
+                "method_name": ""
+            }
+        },
+        "ReturnedValueLengthExceeded": {
+            "name": "ReturnedValueLengthExceeded",
+            "subtypes": [],
+            "props": {
+                "length": "",
+                "limit": ""
+            }
+        },
+        "Serialization": {
+            "name": "Serialization",
+            "subtypes": [],
+            "props": {}
+        },
+        "StackHeightInstrumentation": {
+            "name": "StackHeightInstrumentation",
+            "subtypes": [],
+            "props": {}
+        },
+        "TotalLogLengthExceeded": {
+            "name": "TotalLogLengthExceeded",
+            "subtypes": [],
+            "props": {
+                "length": "",
+                "limit": ""
+            }
+        },
+        "ValueLengthExceeded": {
+            "name": "ValueLengthExceeded",
+            "subtypes": [],
+            "props": {
+                "length": "",
+                "limit": ""
+            }
+        },
+        "WasmTrap": {
+            "name": "WasmTrap",
+            "subtypes": [],
+            "props": {
+                "msg": ""
+            }
+        },
+        "WasmerCompileError": {
+            "name": "WasmerCompileError",
+            "subtypes": [],
+            "props": {
+                "msg": ""
             }
         },
         "AccessKeyNotFound": {
             "name": "AccessKeyNotFound",
             "subtypes": [],
             "props": {
-                "public_key": "",
+                "account_id": "",
+                "public_key": ""
+            }
+        },
+        "AccountAlreadyExists": {
+            "name": "AccountAlreadyExists",
+            "subtypes": [],
+            "props": {
                 "account_id": ""
             }
         },
-        "RentUnpaid": {
-            "name": "RentUnpaid",
+        "AccountDoesNotExist": {
+            "name": "AccountDoesNotExist",
             "subtypes": [],
             "props": {
-                "amount": "",
                 "account_id": ""
             }
         },
-        "Expired": {
-            "name": "Expired",
-            "subtypes": [],
-            "props": {}
-        },
-        "InvalidSignature": {
-            "name": "InvalidSignature",
-            "subtypes": [],
-            "props": {}
-        },
-        "InvalidChain": {
-            "name": "InvalidChain",
-            "subtypes": [],
-            "props": {}
-        },
-        "MethodNameMismatch": {
-            "name": "MethodNameMismatch",
-            "subtypes": [],
-            "props": {
-                "method_name": ""
-            }
-        },
-        "InvalidTxError": {
-            "name": "InvalidTxError",
+        "ActionError": {
+            "name": "ActionError",
             "subtypes": [
-                "InvalidAccessKey",
-                "InvalidSignerId",
-                "SignerDoesNotExist",
-                "InvalidNonce",
-                "InvalidReceiverId",
-                "InvalidSignature",
-                "NotEnoughBalance",
+                "AccountAlreadyExists",
+                "AccountDoesNotExist",
+                "CreateAccountNotAllowed",
+                "ActorNoPermission",
+                "DeleteKeyDoesNotExist",
+                "AddKeyAlreadyExists",
+                "DeleteAccountStaking",
+                "DeleteAccountHasRent",
                 "RentUnpaid",
-                "CostOverflow",
-                "InvalidChain",
-                "Expired"
+                "TriesToUnstake",
+                "TriesToStake",
+                "FunctionCallError",
+                "NewReceiptValidationError"
             ],
-            "props": {}
-        },
-        "InvalidSignerId": {
-            "name": "InvalidSignerId",
-            "subtypes": [],
             "props": {
-                "signer_id": ""
+                "index": ""
             }
-        },
-        "CostOverflow": {
-            "name": "CostOverflow",
-            "subtypes": [],
-            "props": {}
         },
         "ActorNoPermission": {
             "name": "ActorNoPermission",
@@ -47264,6 +47992,61 @@ module.exports = {
             "props": {
                 "account_id": "",
                 "actor_id": ""
+            }
+        },
+        "AddKeyAlreadyExists": {
+            "name": "AddKeyAlreadyExists",
+            "subtypes": [],
+            "props": {
+                "account_id": "",
+                "public_key": ""
+            }
+        },
+        "BalanceMismatchError": {
+            "name": "BalanceMismatchError",
+            "subtypes": [],
+            "props": {
+                "final_accounts_balance": "",
+                "final_postponed_receipts_balance": "",
+                "incoming_receipts_balance": "",
+                "incoming_validator_rewards": "",
+                "initial_accounts_balance": "",
+                "initial_postponed_receipts_balance": "",
+                "new_delayed_receipts_balance": "",
+                "outgoing_receipts_balance": "",
+                "processed_delayed_receipts_balance": "",
+                "total_balance_burnt": "",
+                "total_balance_slashed": "",
+                "total_rent_paid": "",
+                "total_validator_reward": ""
+            }
+        },
+        "CostOverflow": {
+            "name": "CostOverflow",
+            "subtypes": [],
+            "props": {}
+        },
+        "CreateAccountNotAllowed": {
+            "name": "CreateAccountNotAllowed",
+            "subtypes": [],
+            "props": {
+                "account_id": "",
+                "predecessor_id": ""
+            }
+        },
+        "DeleteAccountHasRent": {
+            "name": "DeleteAccountHasRent",
+            "subtypes": [],
+            "props": {
+                "account_id": "",
+                "balance": ""
+            }
+        },
+        "DeleteAccountStaking": {
+            "name": "DeleteAccountStaking",
+            "subtypes": [],
+            "props": {
+                "account_id": ""
             }
         },
         "DeleteKeyDoesNotExist": {
@@ -47274,20 +48057,140 @@ module.exports = {
                 "public_key": ""
             }
         },
-        "AddKeyAlreadyExists": {
-            "name": "AddKeyAlreadyExists",
+        "DepositWithFunctionCall": {
+            "name": "DepositWithFunctionCall",
+            "subtypes": [],
+            "props": {}
+        },
+        "Expired": {
+            "name": "Expired",
+            "subtypes": [],
+            "props": {}
+        },
+        "InvalidAccessKeyError": {
+            "name": "InvalidAccessKeyError",
+            "subtypes": [
+                "AccessKeyNotFound",
+                "ReceiverMismatch",
+                "MethodNameMismatch",
+                "RequiresFullAccess",
+                "NotEnoughAllowance",
+                "DepositWithFunctionCall"
+            ],
+            "props": {}
+        },
+        "InvalidChain": {
+            "name": "InvalidChain",
+            "subtypes": [],
+            "props": {}
+        },
+        "InvalidNonce": {
+            "name": "InvalidNonce",
             "subtypes": [],
             "props": {
-                "public_key": "",
-                "account_id": ""
+                "ak_nonce": "",
+                "tx_nonce": ""
             }
         },
-        "DeleteAccountHasRent": {
-            "name": "DeleteAccountHasRent",
+        "InvalidReceiverId": {
+            "name": "InvalidReceiverId",
+            "subtypes": [],
+            "props": {
+                "receiver_id": ""
+            }
+        },
+        "InvalidSignature": {
+            "name": "InvalidSignature",
+            "subtypes": [],
+            "props": {}
+        },
+        "InvalidSignerId": {
+            "name": "InvalidSignerId",
+            "subtypes": [],
+            "props": {
+                "signer_id": ""
+            }
+        },
+        "InvalidTxError": {
+            "name": "InvalidTxError",
+            "subtypes": [
+                "InvalidAccessKeyError",
+                "InvalidSignerId",
+                "SignerDoesNotExist",
+                "InvalidNonce",
+                "InvalidReceiverId",
+                "InvalidSignature",
+                "NotEnoughBalance",
+                "RentUnpaid",
+                "CostOverflow",
+                "InvalidChain",
+                "Expired",
+                "ActionsValidation"
+            ],
+            "props": {}
+        },
+        "MethodNameMismatch": {
+            "name": "MethodNameMismatch",
+            "subtypes": [],
+            "props": {
+                "method_name": ""
+            }
+        },
+        "NotEnoughAllowance": {
+            "name": "NotEnoughAllowance",
+            "subtypes": [],
+            "props": {
+                "account_id": "",
+                "allowance": "",
+                "cost": "",
+                "public_key": ""
+            }
+        },
+        "NotEnoughBalance": {
+            "name": "NotEnoughBalance",
             "subtypes": [],
             "props": {
                 "balance": "",
-                "account_id": ""
+                "cost": "",
+                "signer_id": ""
+            }
+        },
+        "ReceiverMismatch": {
+            "name": "ReceiverMismatch",
+            "subtypes": [],
+            "props": {
+                "ak_receiver": "",
+                "tx_receiver": ""
+            }
+        },
+        "RentUnpaid": {
+            "name": "RentUnpaid",
+            "subtypes": [],
+            "props": {
+                "account_id": "",
+                "amount": ""
+            }
+        },
+        "RequiresFullAccess": {
+            "name": "RequiresFullAccess",
+            "subtypes": [],
+            "props": {}
+        },
+        "SignerDoesNotExist": {
+            "name": "SignerDoesNotExist",
+            "subtypes": [],
+            "props": {
+                "signer_id": ""
+            }
+        },
+        "TriesToStake": {
+            "name": "TriesToStake",
+            "subtypes": [],
+            "props": {
+                "account_id": "",
+                "balance": "",
+                "locked": "",
+                "stake": ""
             }
         },
         "TriesToUnstake": {
@@ -47305,90 +48208,8 @@ module.exports = {
             ],
             "props": {}
         },
-        "AccountAlreadyExists": {
-            "name": "AccountAlreadyExists",
-            "subtypes": [],
-            "props": {
-                "account_id": ""
-            }
-        },
-        "NotEnoughBalance": {
-            "name": "NotEnoughBalance",
-            "subtypes": [],
-            "props": {
-                "balance": "",
-                "signer_id": "",
-                "cost": ""
-            }
-        },
-        "InvalidAccessKey": {
-            "name": "InvalidAccessKey",
-            "subtypes": [
-                "AccessKeyNotFound",
-                "ReceiverMismatch",
-                "MethodNameMismatch",
-                "ActionError",
-                "NotEnoughAllowance"
-            ],
-            "props": {}
-        },
-        "InvalidNonce": {
-            "name": "InvalidNonce",
-            "subtypes": [],
-            "props": {
-                "ak_nonce": "",
-                "tx_nonce": ""
-            }
-        },
-        "SignerDoesNotExist": {
-            "name": "SignerDoesNotExist",
-            "subtypes": [],
-            "props": {
-                "signer_id": ""
-            }
-        },
-        "ActionError": {
-            "name": "ActionError",
-            "subtypes": [
-                "AccountAlreadyExists",
-                "AccountDoesNotExist",
-                "CreateAccountNotAllowed",
-                "ActorNoPermission",
-                "DeleteKeyDoesNotExist",
-                "AddKeyAlreadyExists",
-                "DeleteAccountStaking",
-                "DeleteAccountHasRent",
-                "RentUnpaid",
-                "TriesToUnstake",
-                "TriesToStake",
-                "FunctionCall"
-            ],
-            "props": {
-                "index": ""
-            }
-        },
-        "AccountDoesNotExist": {
-            "name": "AccountDoesNotExist",
-            "subtypes": [],
-            "props": {
-                "account_id": ""
-            }
-        },
-        "CreateAccountNotAllowed": {
-            "name": "CreateAccountNotAllowed",
-            "subtypes": [],
-            "props": {
-                "predecessor_id": "",
-                "account_id": ""
-            }
-        },
         "Closed": {
             "name": "Closed",
-            "subtypes": [],
-            "props": {}
-        },
-        "Timeout": {
-            "name": "Timeout",
             "subtypes": [],
             "props": {}
         },
@@ -47399,6 +48220,11 @@ module.exports = {
                 "Timeout",
                 "Closed"
             ],
+            "props": {}
+        },
+        "Timeout": {
+            "name": "Timeout",
+            "subtypes": [],
             "props": {}
         }
     }
@@ -47444,7 +48270,7 @@ module.exports = {
     "InvalidPublicKey": "VM Logic provided an invalid public key",
     "ActorNoPermission": "Actor {{actor_id}} doesn't have permission to account {{account_id}} to complete the action",
     "RentUnpaid": "The account {{account_id}} wouldn't have enough balance to pay required rent {{amount}}",
-    "ReceiverMismatch": "Transaction receiver_id {{tx_receiver}} doesn't match the access key receiver_id {{ak_receiver}}",
+    "ReceiverMismatch": "Wrong AccessKey used for transaction: transaction is sent to receiver_id={{tx_receiver}}, but is signed with function call access key that restricted to only use with receiver_id={{ak_receiver}}. Either change receiver_id in your transaction or switch to use a FullAccessKey.",
     "CostOverflow": "Transaction gas or balance cost is too high",
     "InvalidSignature": "Transaction is not signed with the given public key",
     "AccessKeyNotFound": "Signer \"{{account_id}}\" doesn't have access key with the given public_key {{public_key}}",
@@ -47457,7 +48283,7 @@ module.exports = {
     "AddKeyAlreadyExists": "The public key {{public_key}} is already used for an existing access key",
     "InvalidSigner": "Invalid signer account ID {{signer_id}} according to requirements",
     "CreateAccountNotAllowed": "The new account_id {{account_id}} can't be created by {{predecessor_id}}",
-    "ActionError": "The used access key requires exactly one FunctionCall action",
+    "RequiresFullAccess": "The used access key requires exactly one FunctionCall action",
     "TriesToUnstake": "Account {{account_id}} is not yet staked, but tries to unstake",
     "InvalidNonce": "Transaction nonce {{tx_nonce}} must be larger than nonce of the used access key {{ak_nonce}}",
     "AccountAlreadyExists": "Can't create a new account {{account_id}}, because it already exists",
@@ -47484,210 +48310,240 @@ exports.TxExecutionError = TxExecutionError;
 class ActionError extends TxExecutionError {
 }
 exports.ActionError = ActionError;
-class FunctionCall extends ActionError {
+class FunctionCallError extends ActionError {
 }
-exports.FunctionCall = FunctionCall;
-class FunctionExecError extends FunctionCall {
-}
-exports.FunctionExecError = FunctionExecError;
-class HostError extends FunctionExecError {
+exports.FunctionCallError = FunctionCallError;
+class HostError extends FunctionCallError {
 }
 exports.HostError = HostError;
-class InvalidIteratorIndex extends HostError {
-}
-exports.InvalidIteratorIndex = InvalidIteratorIndex;
-class InvalidPublicKey extends HostError {
-}
-exports.InvalidPublicKey = InvalidPublicKey;
-class CannotAppendActionToJointPromise extends HostError {
-}
-exports.CannotAppendActionToJointPromise = CannotAppendActionToJointPromise;
-class CompilationError extends FunctionExecError {
-}
-exports.CompilationError = CompilationError;
-class PrepareError extends CompilationError {
-}
-exports.PrepareError = PrepareError;
-class Instantiate extends PrepareError {
-}
-exports.Instantiate = Instantiate;
-class MemoryAccessViolation extends HostError {
-}
-exports.MemoryAccessViolation = MemoryAccessViolation;
 class BadUTF16 extends HostError {
 }
 exports.BadUTF16 = BadUTF16;
-class LinkError extends FunctionExecError {
-}
-exports.LinkError = LinkError;
-class StackHeightInstrumentation extends PrepareError {
-}
-exports.StackHeightInstrumentation = StackHeightInstrumentation;
-class WasmerCompileError extends CompilationError {
-}
-exports.WasmerCompileError = WasmerCompileError;
-class Memory extends PrepareError {
-}
-exports.Memory = Memory;
-class InvalidAccountId extends HostError {
-}
-exports.InvalidAccountId = InvalidAccountId;
-class ResolveError extends FunctionExecError {
-}
-exports.ResolveError = ResolveError;
-class InternalMemoryDeclared extends PrepareError {
-}
-exports.InternalMemoryDeclared = InternalMemoryDeclared;
-class GasInstrumentation extends PrepareError {
-}
-exports.GasInstrumentation = GasInstrumentation;
-class MethodUTF8Error extends ResolveError {
-}
-exports.MethodUTF8Error = MethodUTF8Error;
-class CannotReturnJointPromise extends HostError {
-}
-exports.CannotReturnJointPromise = CannotReturnJointPromise;
-class MethodInvalidSignature extends ResolveError {
-}
-exports.MethodInvalidSignature = MethodInvalidSignature;
-class InvalidRegisterId extends HostError {
-}
-exports.InvalidRegisterId = InvalidRegisterId;
-class GasExceeded extends HostError {
-}
-exports.GasExceeded = GasExceeded;
-class Deserialization extends PrepareError {
-}
-exports.Deserialization = Deserialization;
-class GasLimitExceeded extends HostError {
-}
-exports.GasLimitExceeded = GasLimitExceeded;
-class BalanceExceeded extends HostError {
-}
-exports.BalanceExceeded = BalanceExceeded;
-class Serialization extends PrepareError {
-}
-exports.Serialization = Serialization;
-class WasmTrap extends FunctionExecError {
-}
-exports.WasmTrap = WasmTrap;
-class ProhibitedInView extends HostError {
-}
-exports.ProhibitedInView = ProhibitedInView;
-class MethodEmptyName extends ResolveError {
-}
-exports.MethodEmptyName = MethodEmptyName;
-class EmptyMethodName extends HostError {
-}
-exports.EmptyMethodName = EmptyMethodName;
-class GuestPanic extends HostError {
-}
-exports.GuestPanic = GuestPanic;
-class InvalidMethodName extends HostError {
-}
-exports.InvalidMethodName = InvalidMethodName;
-class MethodNotFound extends ResolveError {
-}
-exports.MethodNotFound = MethodNotFound;
-class InvalidPromiseResultIndex extends HostError {
-}
-exports.InvalidPromiseResultIndex = InvalidPromiseResultIndex;
-class IteratorWasInvalidated extends HostError {
-}
-exports.IteratorWasInvalidated = IteratorWasInvalidated;
-class InvalidPromiseIndex extends HostError {
-}
-exports.InvalidPromiseIndex = InvalidPromiseIndex;
 class BadUTF8 extends HostError {
 }
 exports.BadUTF8 = BadUTF8;
-class InvalidReceiptIndex extends HostError {
+class BalanceExceeded extends HostError {
 }
-exports.InvalidReceiptIndex = InvalidReceiptIndex;
+exports.BalanceExceeded = BalanceExceeded;
+class CannotAppendActionToJointPromise extends HostError {
+}
+exports.CannotAppendActionToJointPromise = CannotAppendActionToJointPromise;
+class CannotReturnJointPromise extends HostError {
+}
+exports.CannotReturnJointPromise = CannotReturnJointPromise;
+class CompilationError extends FunctionCallError {
+}
+exports.CompilationError = CompilationError;
 class CodeDoesNotExist extends CompilationError {
 }
 exports.CodeDoesNotExist = CodeDoesNotExist;
+class ContractSizeExceeded extends HostError {
+}
+exports.ContractSizeExceeded = ContractSizeExceeded;
+class PrepareError extends CompilationError {
+}
+exports.PrepareError = PrepareError;
+class Deserialization extends PrepareError {
+}
+exports.Deserialization = Deserialization;
+class EmptyMethodName extends HostError {
+}
+exports.EmptyMethodName = EmptyMethodName;
+class GasExceeded extends HostError {
+}
+exports.GasExceeded = GasExceeded;
+class GasInstrumentation extends PrepareError {
+}
+exports.GasInstrumentation = GasInstrumentation;
+class GasLimitExceeded extends HostError {
+}
+exports.GasLimitExceeded = GasLimitExceeded;
+class GuestPanic extends HostError {
+}
+exports.GuestPanic = GuestPanic;
+class Instantiate extends PrepareError {
+}
+exports.Instantiate = Instantiate;
 class IntegerOverflow extends HostError {
 }
 exports.IntegerOverflow = IntegerOverflow;
+class InternalMemoryDeclared extends PrepareError {
+}
+exports.InternalMemoryDeclared = InternalMemoryDeclared;
+class InvalidAccountId extends HostError {
+}
+exports.InvalidAccountId = InvalidAccountId;
+class InvalidIteratorIndex extends HostError {
+}
+exports.InvalidIteratorIndex = InvalidIteratorIndex;
+class InvalidMethodName extends HostError {
+}
+exports.InvalidMethodName = InvalidMethodName;
+class InvalidPromiseIndex extends HostError {
+}
+exports.InvalidPromiseIndex = InvalidPromiseIndex;
+class InvalidPromiseResultIndex extends HostError {
+}
+exports.InvalidPromiseResultIndex = InvalidPromiseResultIndex;
+class InvalidPublicKey extends HostError {
+}
+exports.InvalidPublicKey = InvalidPublicKey;
+class InvalidReceiptIndex extends HostError {
+}
+exports.InvalidReceiptIndex = InvalidReceiptIndex;
+class InvalidRegisterId extends HostError {
+}
+exports.InvalidRegisterId = InvalidRegisterId;
+class IteratorWasInvalidated extends HostError {
+}
+exports.IteratorWasInvalidated = IteratorWasInvalidated;
+class KeyLengthExceeded extends HostError {
+}
+exports.KeyLengthExceeded = KeyLengthExceeded;
+class LinkError extends FunctionCallError {
+}
+exports.LinkError = LinkError;
+class Memory extends PrepareError {
+}
+exports.Memory = Memory;
+class MemoryAccessViolation extends HostError {
+}
+exports.MemoryAccessViolation = MemoryAccessViolation;
+class MethodResolveError extends FunctionCallError {
+}
+exports.MethodResolveError = MethodResolveError;
+class MethodEmptyName extends MethodResolveError {
+}
+exports.MethodEmptyName = MethodEmptyName;
+class MethodInvalidSignature extends MethodResolveError {
+}
+exports.MethodInvalidSignature = MethodInvalidSignature;
+class MethodNotFound extends MethodResolveError {
+}
+exports.MethodNotFound = MethodNotFound;
+class MethodUTF8Error extends MethodResolveError {
+}
+exports.MethodUTF8Error = MethodUTF8Error;
+class NumberInputDataDependenciesExceeded extends HostError {
+}
+exports.NumberInputDataDependenciesExceeded = NumberInputDataDependenciesExceeded;
+class NumberOfLogsExceeded extends HostError {
+}
+exports.NumberOfLogsExceeded = NumberOfLogsExceeded;
+class NumberPromisesExceeded extends HostError {
+}
+exports.NumberPromisesExceeded = NumberPromisesExceeded;
+class ProhibitedInView extends HostError {
+}
+exports.ProhibitedInView = ProhibitedInView;
+class ReturnedValueLengthExceeded extends HostError {
+}
+exports.ReturnedValueLengthExceeded = ReturnedValueLengthExceeded;
+class Serialization extends PrepareError {
+}
+exports.Serialization = Serialization;
+class StackHeightInstrumentation extends PrepareError {
+}
+exports.StackHeightInstrumentation = StackHeightInstrumentation;
+class TotalLogLengthExceeded extends HostError {
+}
+exports.TotalLogLengthExceeded = TotalLogLengthExceeded;
+class ValueLengthExceeded extends HostError {
+}
+exports.ValueLengthExceeded = ValueLengthExceeded;
+class WasmTrap extends FunctionCallError {
+}
+exports.WasmTrap = WasmTrap;
+class WasmerCompileError extends CompilationError {
+}
+exports.WasmerCompileError = WasmerCompileError;
 class InvalidTxError extends TxExecutionError {
 }
 exports.InvalidTxError = InvalidTxError;
-class InvalidAccessKey extends InvalidTxError {
+class InvalidAccessKeyError extends InvalidTxError {
 }
-exports.InvalidAccessKey = InvalidAccessKey;
-class NotEnoughAllowance extends InvalidAccessKey {
-}
-exports.NotEnoughAllowance = NotEnoughAllowance;
-class ReceiverMismatch extends InvalidAccessKey {
-}
-exports.ReceiverMismatch = ReceiverMismatch;
-class DeleteAccountStaking extends ActionError {
-}
-exports.DeleteAccountStaking = DeleteAccountStaking;
-class TriesToStake extends ActionError {
-}
-exports.TriesToStake = TriesToStake;
-class InvalidReceiverId extends InvalidTxError {
-}
-exports.InvalidReceiverId = InvalidReceiverId;
-class AccessKeyNotFound extends InvalidAccessKey {
+exports.InvalidAccessKeyError = InvalidAccessKeyError;
+class AccessKeyNotFound extends InvalidAccessKeyError {
 }
 exports.AccessKeyNotFound = AccessKeyNotFound;
-class RentUnpaid extends InvalidTxError {
-}
-exports.RentUnpaid = RentUnpaid;
-class Expired extends InvalidTxError {
-}
-exports.Expired = Expired;
-class InvalidSignature extends InvalidTxError {
-}
-exports.InvalidSignature = InvalidSignature;
-class InvalidChain extends InvalidTxError {
-}
-exports.InvalidChain = InvalidChain;
-class MethodNameMismatch extends InvalidAccessKey {
-}
-exports.MethodNameMismatch = MethodNameMismatch;
-class InvalidSignerId extends InvalidTxError {
-}
-exports.InvalidSignerId = InvalidSignerId;
-class CostOverflow extends InvalidTxError {
-}
-exports.CostOverflow = CostOverflow;
-class ActorNoPermission extends ActionError {
-}
-exports.ActorNoPermission = ActorNoPermission;
-class DeleteKeyDoesNotExist extends ActionError {
-}
-exports.DeleteKeyDoesNotExist = DeleteKeyDoesNotExist;
-class AddKeyAlreadyExists extends ActionError {
-}
-exports.AddKeyAlreadyExists = AddKeyAlreadyExists;
-class DeleteAccountHasRent extends ActionError {
-}
-exports.DeleteAccountHasRent = DeleteAccountHasRent;
-class TriesToUnstake extends ActionError {
-}
-exports.TriesToUnstake = TriesToUnstake;
 class AccountAlreadyExists extends ActionError {
 }
 exports.AccountAlreadyExists = AccountAlreadyExists;
-class NotEnoughBalance extends InvalidTxError {
-}
-exports.NotEnoughBalance = NotEnoughBalance;
-class InvalidNonce extends InvalidTxError {
-}
-exports.InvalidNonce = InvalidNonce;
-class SignerDoesNotExist extends InvalidTxError {
-}
-exports.SignerDoesNotExist = SignerDoesNotExist;
 class AccountDoesNotExist extends ActionError {
 }
 exports.AccountDoesNotExist = AccountDoesNotExist;
+class ActorNoPermission extends ActionError {
+}
+exports.ActorNoPermission = ActorNoPermission;
+class AddKeyAlreadyExists extends ActionError {
+}
+exports.AddKeyAlreadyExists = AddKeyAlreadyExists;
+class BalanceMismatchError extends errors_1.TypedError {
+}
+exports.BalanceMismatchError = BalanceMismatchError;
+class CostOverflow extends InvalidTxError {
+}
+exports.CostOverflow = CostOverflow;
 class CreateAccountNotAllowed extends ActionError {
 }
 exports.CreateAccountNotAllowed = CreateAccountNotAllowed;
+class DeleteAccountHasRent extends ActionError {
+}
+exports.DeleteAccountHasRent = DeleteAccountHasRent;
+class DeleteAccountStaking extends ActionError {
+}
+exports.DeleteAccountStaking = DeleteAccountStaking;
+class DeleteKeyDoesNotExist extends ActionError {
+}
+exports.DeleteKeyDoesNotExist = DeleteKeyDoesNotExist;
+class DepositWithFunctionCall extends InvalidAccessKeyError {
+}
+exports.DepositWithFunctionCall = DepositWithFunctionCall;
+class Expired extends InvalidTxError {
+}
+exports.Expired = Expired;
+class InvalidChain extends InvalidTxError {
+}
+exports.InvalidChain = InvalidChain;
+class InvalidNonce extends InvalidTxError {
+}
+exports.InvalidNonce = InvalidNonce;
+class InvalidReceiverId extends InvalidTxError {
+}
+exports.InvalidReceiverId = InvalidReceiverId;
+class InvalidSignature extends InvalidTxError {
+}
+exports.InvalidSignature = InvalidSignature;
+class InvalidSignerId extends InvalidTxError {
+}
+exports.InvalidSignerId = InvalidSignerId;
+class MethodNameMismatch extends InvalidAccessKeyError {
+}
+exports.MethodNameMismatch = MethodNameMismatch;
+class NotEnoughAllowance extends InvalidAccessKeyError {
+}
+exports.NotEnoughAllowance = NotEnoughAllowance;
+class NotEnoughBalance extends InvalidTxError {
+}
+exports.NotEnoughBalance = NotEnoughBalance;
+class ReceiverMismatch extends InvalidAccessKeyError {
+}
+exports.ReceiverMismatch = ReceiverMismatch;
+class RentUnpaid extends ActionError {
+}
+exports.RentUnpaid = RentUnpaid;
+class RequiresFullAccess extends InvalidAccessKeyError {
+}
+exports.RequiresFullAccess = RequiresFullAccess;
+class SignerDoesNotExist extends InvalidTxError {
+}
+exports.SignerDoesNotExist = SignerDoesNotExist;
+class TriesToStake extends ActionError {
+}
+exports.TriesToStake = TriesToStake;
+class TriesToUnstake extends ActionError {
+}
+exports.TriesToUnstake = TriesToUnstake;
 class Closed extends ServerError {
 }
 exports.Closed = Closed;
@@ -47737,6 +48593,10 @@ function walkSubtype(errorObj, schema, result, typeName) {
     let type;
     let errorTypeName;
     for (const errorName in schema) {
+        if (isString(errorObj[errorName])) {
+            // Return early if error type is in a schema
+            return errorObj[errorName];
+        }
         if (isObject(errorObj[errorName])) {
             error = errorObj[errorName];
             type = schema[errorName];
@@ -47752,10 +48612,8 @@ function walkSubtype(errorObj, schema, result, typeName) {
         }
     }
     if (error && type) {
-        for (const prop in type.props) {
-            if (type.props.hasOwnProperty(prop)) {
-                result[prop] = error[prop];
-            }
+        for (const prop of Object.keys(type.props)) {
+            result[prop] = error[prop];
         }
         return walkSubtype(error, schema, result, errorTypeName);
     }
@@ -47765,6 +48623,9 @@ function walkSubtype(errorObj, schema, result, typeName) {
 }
 function isObject(n) {
     return Object.prototype.toString.call(n) === '[object Object]';
+}
+function isString(n) {
+    return Object.prototype.toString.call(n) === '[object String]';
 }
 
 },{"mustache":"../node_modules/mustache/mustache.js","../generated/rpc_error_schema.json":"../node_modules/nearlib/lib/generated/rpc_error_schema.json","../res/error_messages.json":"../node_modules/nearlib/lib/res/error_messages.json","../generated/rpc_error_types":"../node_modules/nearlib/lib/generated/rpc_error_types.js"}],"../node_modules/nearlib/lib/providers/json-rpc-provider.js":[function(require,module,exports) {
@@ -47780,9 +48641,8 @@ const rpc_errors_1 = require("../utils/rpc_errors");
 /// Keep ids unique across all connections.
 let _nextId = 123;
 class JsonRpcProvider extends provider_1.Provider {
-    constructor(url, network) {
+    constructor(url) {
         super();
-        // TODO: resolve network to url...
         this.connection = { url };
     }
     async getNetwork() {
@@ -50404,8 +51264,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 
 },{}],"../node_modules/nearlib/lib/utils/format.js":[function(require,module,exports) {
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const BN = require('bn.js');
+const bn_js_1 = __importDefault(require("bn.js"));
 /**
  * Exponent for calculating how many indivisible units are there in one NEAR. See {@link NEAR_NOMINATION}.
  */
@@ -50413,11 +51276,11 @@ exports.NEAR_NOMINATION_EXP = 24;
 /**
  * Number of indivisible units in one NEAR. Derived from {@link NEAR_NOMINATION_EXP}.
  */
-exports.NEAR_NOMINATION = new BN('10', 10).pow(new BN(exports.NEAR_NOMINATION_EXP, 10));
+exports.NEAR_NOMINATION = new bn_js_1.default('10', 10).pow(new bn_js_1.default(exports.NEAR_NOMINATION_EXP, 10));
 // Pre-calculate offests used for rounding to different number of digits
 const ROUNDING_OFFSETS = [];
-const BN10 = new BN(10);
-for (let i = 0, offset = new BN(5); i < exports.NEAR_NOMINATION_EXP; i++, offset = offset.mul(BN10)) {
+const BN10 = new bn_js_1.default(10);
+for (let i = 0, offset = new bn_js_1.default(5); i < exports.NEAR_NOMINATION_EXP; i++, offset = offset.mul(BN10)) {
     ROUNDING_OFFSETS[i] = offset;
 }
 /**
@@ -50428,7 +51291,7 @@ for (let i = 0, offset = new BN(5); i < exports.NEAR_NOMINATION_EXP; i++, offset
  * @param fracDigits number of fractional digits to preserve in formatted string. Balance is rounded to match given number of digits.
  */
 function formatNearAmount(balance, fracDigits = exports.NEAR_NOMINATION_EXP) {
-    const balanceBN = new BN(balance, 10);
+    const balanceBN = new bn_js_1.default(balance, 10);
     if (fracDigits !== exports.NEAR_NOMINATION_EXP) {
         // Adjust balance for rounding at given number of digits
         const roundingExp = exports.NEAR_NOMINATION_EXP - fracDigits - 1;
@@ -52293,17 +53156,23 @@ exports.signTransaction = signTransaction;
 },{"js-sha256":"../node_modules/js-sha256/src/sha256.js","./utils/enums":"../node_modules/nearlib/lib/utils/enums.js","./utils/serialize":"../node_modules/nearlib/lib/utils/serialize.js","./utils/key_pair":"../node_modules/nearlib/lib/utils/key_pair.js"}],"../node_modules/nearlib/lib/account.js":[function(require,module,exports) {
 var Buffer = require("buffer").Buffer;
 'use strict';
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+const bn_js_1 = __importDefault(require("bn.js"));
 const transaction_1 = require("./transaction");
 const providers_1 = require("./providers");
 const serialize_1 = require("./utils/serialize");
 const key_pair_1 = require("./utils/key_pair");
 const errors_1 = require("./utils/errors");
 const rpc_errors_1 = require("./utils/rpc_errors");
-// Default amount of tokens to be send with the function calls. Used to pay for the fees
+// Default amount of gas to be sent with the function calls. Used to pay for the fees
 // incurred while running the contract execution. The unused amount will be refunded back to
 // the originator.
-const DEFAULT_FUNC_CALL_AMOUNT = 2000000 * 1000000;
+// Default value is set to equal to max_prepaid_gas as discussed here:
+// https://github.com/nearprotocol/nearlib/pull/191#discussion_r369671912
+const DEFAULT_FUNC_CALL_GAS = new bn_js_1.default('10000000000000000');
 // Default number of retries before giving up on a transactioin.
 const TX_STATUS_RETRY_NUMBER = 10;
 // Default wait until next retry in millis.
@@ -52424,7 +53293,7 @@ class Account {
     async functionCall(contractId, methodName, args, gas, amount) {
         args = args || {};
         this.validateArgs(args);
-        return this.signAndSendTransaction(contractId, [transaction_1.functionCall(methodName, Buffer.from(JSON.stringify(args)), gas || DEFAULT_FUNC_CALL_AMOUNT, amount)]);
+        return this.signAndSendTransaction(contractId, [transaction_1.functionCall(methodName, Buffer.from(JSON.stringify(args)), gas || DEFAULT_FUNC_CALL_GAS, amount)]);
     }
     // TODO: expand this API to support more options.
     async addKey(publicKey, contractId, methodName, amount) {
@@ -52488,7 +53357,7 @@ class Account {
 }
 exports.Account = Account;
 
-},{"./transaction":"../node_modules/nearlib/lib/transaction.js","./providers":"../node_modules/nearlib/lib/providers/index.js","./utils/serialize":"../node_modules/nearlib/lib/utils/serialize.js","./utils/key_pair":"../node_modules/nearlib/lib/utils/key_pair.js","./utils/errors":"../node_modules/nearlib/lib/utils/errors.js","./utils/rpc_errors":"../node_modules/nearlib/lib/utils/rpc_errors.js","buffer":"../node_modules/buffer/index.js"}],"../node_modules/nearlib/lib/account_creator.js":[function(require,module,exports) {
+},{"bn.js":"../node_modules/nearlib/node_modules/bn.js/lib/bn.js","./transaction":"../node_modules/nearlib/lib/transaction.js","./providers":"../node_modules/nearlib/lib/providers/index.js","./utils/serialize":"../node_modules/nearlib/lib/utils/serialize.js","./utils/key_pair":"../node_modules/nearlib/lib/utils/key_pair.js","./utils/errors":"../node_modules/nearlib/lib/utils/errors.js","./utils/rpc_errors":"../node_modules/nearlib/lib/utils/rpc_errors.js","buffer":"../node_modules/buffer/index.js"}],"../node_modules/nearlib/lib/account_creator.js":[function(require,module,exports) {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const web_1 = require("./utils/web");
@@ -52533,15 +53402,6 @@ const key_pair_1 = require("./utils/key_pair");
  * General signing interface, can be used for in memory signing, RPC singing, external wallet, HSM, etc.
  */
 class Signer {
-    /**
-     * Signs given message, by first hashing with sha256.
-     * @param message message to sign.
-     * @param accountId accountId to use for signing.
-     * @param networkId network for this accontId.
-     */
-    async signMessage(message, accountId, networkId) {
-        return this.signHash(new Uint8Array(js_sha256_1.default.sha256.array(message)), accountId, networkId);
-    }
 }
 exports.Signer = Signer;
 /**
@@ -52564,7 +53424,8 @@ class InMemorySigner extends Signer {
         }
         return keyPair.getPublicKey();
     }
-    async signHash(hash, accountId, networkId) {
+    async signMessage(message, accountId, networkId) {
+        const hash = new Uint8Array(js_sha256_1.default.sha256.array(message));
         if (!accountId) {
             throw new Error('InMemorySigner requires provided account id');
         }
@@ -52627,7 +53488,8 @@ class Contract {
     constructor(account, contractId, options) {
         this.account = account;
         this.contractId = contractId;
-        options.viewMethods.forEach((methodName) => {
+        const { viewMethods = [], changeMethods = [] } = options;
+        viewMethods.forEach((methodName) => {
             Object.defineProperty(this, methodName, {
                 writable: false,
                 enumerable: true,
@@ -52639,7 +53501,7 @@ class Contract {
                 }
             });
         });
-        options.changeMethods.forEach((methodName) => {
+        changeMethods.forEach((methodName) => {
             Object.defineProperty(this, methodName, {
                 writable: false,
                 enumerable: true,
@@ -52689,7 +53551,9 @@ class Near {
         });
         if (config.masterAccount) {
             // TODO: figure out better way of specifiying initial balance.
-            this.accountCreator = new account_creator_1.LocalAccountCreator(new account_1.Account(this.connection, config.masterAccount), new bn_js_1.default(config.initialBalance) || new bn_js_1.default(1000 * 1000 * 1000 * 1000));
+            // Hardcoded number below is roughly five times the gas cost to dev-deploy with near-shell
+            const initialBalance = config.initialBalance ? new bn_js_1.default(config.initialBalance) : new bn_js_1.default('100000000000000000');
+            this.accountCreator = new account_creator_1.LocalAccountCreator(new account_1.Account(this.connection, config.masterAccount), initialBalance);
         }
         else if (config.helperUrl) {
             this.accountCreator = new account_creator_1.UrlAccountCreator(this.connection, config.helperUrl);
@@ -52759,20 +53623,27 @@ async function connect(config) {
 exports.connect = connect;
 
 },{"bn.js":"../node_modules/nearlib/node_modules/bn.js/lib/bn.js","./account":"../node_modules/nearlib/lib/account.js","./connection":"../node_modules/nearlib/lib/connection.js","./contract":"../node_modules/nearlib/lib/contract.js","./key_stores/unencrypted_file_system_keystore":"../node_modules/nearlib/lib/key_stores/unencrypted_file_system_keystore.js","./account_creator":"../node_modules/nearlib/lib/account_creator.js","./key_stores":"../node_modules/nearlib/lib/key_stores/index.js"}],"../node_modules/nearlib/lib/wallet-account.js":[function(require,module,exports) {
+var Buffer = require("buffer").Buffer;
 'use strict';
 Object.defineProperty(exports, "__esModule", { value: true });
+const account_1 = require("./account");
+const transaction_1 = require("./transaction");
 const utils_1 = require("./utils");
+const serialize_1 = require("./utils/serialize");
 const LOGIN_WALLET_URL_SUFFIX = '/login/';
 const LOCAL_STORAGE_KEY_SUFFIX = '_wallet_auth_key';
 const PENDING_ACCESS_KEY_PREFIX = 'pending_key'; // browser storage key for a pending access key (i.e. key has been generated but we are not sure it was added yet)
-class WalletAccount {
+class WalletConnection {
     constructor(near, appKeyPrefix) {
+        this._near = near;
+        const authDataKey = appKeyPrefix + LOCAL_STORAGE_KEY_SUFFIX;
+        const authData = JSON.parse(window.localStorage.getItem(authDataKey));
         this._networkId = near.config.networkId;
         this._walletBaseUrl = near.config.walletUrl;
         appKeyPrefix = appKeyPrefix || near.config.contractName || 'default';
-        this._authDataKey = appKeyPrefix + LOCAL_STORAGE_KEY_SUFFIX;
         this._keyStore = near.connection.signer.keyStore;
-        this._authData = JSON.parse(window.localStorage.getItem(this._authDataKey) || '{}');
+        this._authData = authData || { allKeys: [] };
+        this._authDataKey = authDataKey;
         if (!this.isSignedIn()) {
             this._completeSignInWithAccessKey();
         }
@@ -52822,21 +53693,35 @@ class WalletAccount {
         await this._keyStore.setKey(this._networkId, PENDING_ACCESS_KEY_PREFIX + accessKey.getPublicKey(), accessKey);
         window.location.assign(newUrl.toString());
     }
+    async requestSignTransactions(transactions, callbackUrl) {
+        const currentUrl = new URL(window.location.href);
+        const newUrl = new URL('sign', this._walletBaseUrl);
+        newUrl.searchParams.set('transactions', transactions
+            .map(transaction => utils_1.serialize.serialize(transaction_1.SCHEMA, transaction))
+            .map(serialized => Buffer.from(serialized).toString('base64'))
+            .join(','));
+        newUrl.searchParams.set('callbackUrl', callbackUrl || currentUrl.href);
+        window.location.assign(newUrl.toString());
+    }
     /**
      * Complete sign in for a given account id and public key. To be invoked by the app when getting a callback from the wallet.
      */
     async _completeSignInWithAccessKey() {
         const currentUrl = new URL(window.location.href);
         const publicKey = currentUrl.searchParams.get('public_key') || '';
+        const allKeys = (currentUrl.searchParams.get('all_keys') || '').split(',');
         const accountId = currentUrl.searchParams.get('account_id') || '';
+        // TODO: Handle situation when access key is not added
         if (accountId && publicKey) {
             this._authData = {
-                accountId
+                accountId,
+                allKeys
             };
             window.localStorage.setItem(this._authDataKey, JSON.stringify(this._authData));
             await this._moveKeyFromTempToPermanent(accountId, publicKey);
         }
         currentUrl.searchParams.delete('public_key');
+        currentUrl.searchParams.delete('all_keys');
         currentUrl.searchParams.delete('account_id');
         window.history.replaceState({}, document.title, currentUrl.toString());
     }
@@ -52854,10 +53739,97 @@ class WalletAccount {
         this._authData = {};
         window.localStorage.removeItem(this._authDataKey);
     }
+    account() {
+        if (!this._connectedAccount) {
+            this._connectedAccount = new ConnectedWalletAccount(this, this._near.connection, this._authData.accountId);
+        }
+        return this._connectedAccount;
+    }
 }
-exports.WalletAccount = WalletAccount;
+exports.WalletConnection = WalletConnection;
+exports.WalletAccount = WalletConnection;
+/**
+ * {@link Account} implementation which redirects to wallet using (@link WalletConnection) when no local key is available.
+ */
+class ConnectedWalletAccount extends account_1.Account {
+    constructor(walletConnection, connection, accountId) {
+        super(connection, accountId);
+        this.walletConnection = walletConnection;
+    }
+    // Overriding Account methods
+    async signAndSendTransaction(receiverId, actions) {
+        await this.ready;
+        const localKey = await this.connection.signer.getPublicKey(this.accountId, this.connection.networkId);
+        let accessKey = await this.accessKeyForTransaction(receiverId, actions, localKey);
+        if (!accessKey) {
+            throw new Error(`Cannot find matching key for transaction sent to ${receiverId}`);
+        }
+        if (localKey && localKey.toString() === accessKey.public_key) {
+            try {
+                return await super.signAndSendTransaction(receiverId, actions);
+            }
+            catch (e) {
+                // TODO: Use TypedError when available
+                if (e.message.includes('does not have enough balance')) {
+                    accessKey = await this.accessKeyForTransaction(receiverId, actions);
+                }
+                else {
+                    throw e;
+                }
+            }
+        }
+        const publicKey = utils_1.PublicKey.from(accessKey.public_key);
+        // TODO: Cache & listen for nonce updates for given access key
+        const nonce = accessKey.access_key.nonce + 1;
+        const status = await this.connection.provider.status();
+        const blockHash = serialize_1.base_decode(status.sync_info.latest_block_hash);
+        const transaction = transaction_1.createTransaction(this.accountId, publicKey, receiverId, nonce, actions, blockHash);
+        await this.walletConnection.requestSignTransactions([transaction], window.location.href);
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                reject(new Error('Failed to redirect to sign transaction'));
+            }, 1000);
+        });
+        // TODO: Aggregate multiple transaction request with "debounce".
+        // TODO: Introduce TrasactionQueue which also can be used to watch for status?
+    }
+    async accessKeyMatchesTransaction(accessKey, receiverId, actions) {
+        const { access_key: { permission } } = accessKey;
+        if (permission === 'FullAccess') {
+            return true;
+        }
+        if (permission.FunctionCall) {
+            const { receiver_id: allowedReceiverId, method_names: allowedMethods } = permission.FunctionCall;
+            if (allowedReceiverId === receiverId) {
+                if (actions.length !== 1) {
+                    return false;
+                }
+                const [{ functionCall }] = actions;
+                return functionCall && (allowedMethods.length === 0 || allowedMethods.includes(functionCall.methodName));
+            }
+        }
+        // TODO: Support other permissions than FunctionCall
+        return false;
+    }
+    async accessKeyForTransaction(receiverId, actions, localKey) {
+        const accessKeys = await this.getAccessKeys();
+        if (localKey) {
+            const accessKey = accessKeys.find(key => key.public_key === localKey.toString());
+            if (accessKey && await this.accessKeyMatchesTransaction(accessKey, receiverId, actions)) {
+                return accessKey;
+            }
+        }
+        const walletKeys = this.walletConnection._authData.allKeys;
+        for (const accessKey of accessKeys) {
+            if (walletKeys.indexOf(accessKey.public_key) !== -1 && await this.accessKeyMatchesTransaction(accessKey, receiverId, actions)) {
+                return accessKey;
+            }
+        }
+        return null;
+    }
+}
 
-},{"./utils":"../node_modules/nearlib/lib/utils/index.js"}],"../node_modules/nearlib/lib/index.js":[function(require,module,exports) {
+},{"./account":"../node_modules/nearlib/lib/account.js","./transaction":"../node_modules/nearlib/lib/transaction.js","./utils":"../node_modules/nearlib/lib/utils/index.js","./utils/serialize":"../node_modules/nearlib/lib/utils/serialize.js","buffer":"../node_modules/buffer/index.js"}],"../node_modules/nearlib/lib/index.js":[function(require,module,exports) {
 'use strict';
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
@@ -52890,8 +53862,10 @@ const key_pair_1 = require("./utils/key_pair");
 exports.KeyPair = key_pair_1.KeyPair;
 const near_1 = require("./near");
 exports.connect = near_1.connect;
+// TODO: Deprecate and remove WalletAccount
 const wallet_account_1 = require("./wallet-account");
 exports.WalletAccount = wallet_account_1.WalletAccount;
+exports.WalletConnection = wallet_account_1.WalletConnection;
 
 },{"./providers":"../node_modules/nearlib/lib/providers/index.js","./utils":"../node_modules/nearlib/lib/utils/index.js","./key_stores":"../node_modules/nearlib/lib/key_stores/index.js","./transaction":"../node_modules/nearlib/lib/transaction.js","./account":"../node_modules/nearlib/lib/account.js","./account_creator":"../node_modules/nearlib/lib/account_creator.js","./connection":"../node_modules/nearlib/lib/connection.js","./signer":"../node_modules/nearlib/lib/signer.js","./contract":"../node_modules/nearlib/lib/contract.js","./utils/key_pair":"../node_modules/nearlib/lib/utils/key_pair.js","./near":"../node_modules/nearlib/lib/near.js","./wallet-account":"../node_modules/nearlib/lib/wallet-account.js"}],"index.js":[function(require,module,exports) {
 "use strict";
@@ -52982,7 +53956,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62791" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50390" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
