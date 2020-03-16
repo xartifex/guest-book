@@ -32691,6 +32691,7 @@ const App = ({
     await contract.addMessage({
       text
     }, BOATLOAD_OF_GAS, isPremium ? PREMIUM_COST.toString() : '0');
+    setInputText('');
     const messages = await contract.getMessages();
     setMessages(messages);
   });
@@ -32706,12 +32707,8 @@ const App = ({
     onClick: signIn
   }, "Log in")), accountId && _react.default.createElement("form", {
     onSubmit: async e => {
-      e.preventDefault(); // TODO: optimistically update page with new message,
-      // update blockchain data in background
-      // add uuid to each message, so we know which one is already known
-
+      e.preventDefault();
       const input = e.target.elements.message;
-      input.value = '';
       input.focus();
     }
   }, _react.default.createElement("label", {
@@ -32724,8 +32721,8 @@ const App = ({
     autoComplete: "off",
     autoFocus: true,
     value: inputText,
-    onChange: evt => {
-      setInputText(evt.target.value);
+    onChange: e => {
+      setInputText(e.target.value);
     },
     id: "message",
     required: true,
@@ -32739,7 +32736,6 @@ const App = ({
     },
     onClick: e => {
       addMessage(inputText, false);
-      e.stopPropagation();
     }
   }, "Save"), _react.default.createElement("button", {
     className: "primary",
@@ -32749,7 +32745,6 @@ const App = ({
     },
     onClick: e => {
       addMessage(inputText, true);
-      e.stopPropagation();
     }
   }, "Save & Donate"))), !!messages.length && _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("h2", null, "Messages"), messages.map((message, i) => // TODO: format as cards, add timestamp
   _react.default.createElement("p", {
@@ -32761,7 +32756,6 @@ const App = ({
 App.propTypes = {
   contract: _propTypes.default.shape({
     addMessage: _propTypes.default.func.isRequired,
-    // addPremiumMessage: PropTypes.func.isRequired,
     getMessages: _propTypes.default.func.isRequired
   }).isRequired,
   nearConfig: _propTypes.default.shape({
@@ -53223,7 +53217,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "51122" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57496" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
