@@ -53685,7 +53685,7 @@ var _propTypes = _interopRequireDefault(require("prop-types"));
 
 require("regenerator-runtime/runtime");
 
-require("nearlib");
+var _nearlib = _interopRequireDefault(require("nearlib"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -53745,7 +53745,8 @@ const App = ({
       // }
 
       const BOATLOAD_OF_GAS = '10000000000000000';
-      const PREMIUM_COST = nearlib.utils.format.parseNearAmount('0.01');
+      const PREMIUM_COST = '10000000000000000000000'; //nearlib.utils.format.parseNearAmount('0.01');
+
       await contract.addMessage({
         text: input.value
       }, BOATLOAD_OF_GAS, premium ? PREMIUM_COST : '0');
@@ -53958,7 +53959,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53403" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53980" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
