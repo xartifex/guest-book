@@ -32696,15 +32696,33 @@ const App = ({
     onClick: signIn
   }, "Log in")), accountId && _react.default.createElement("form", {
     onSubmit: async e => {
+      console.log("aloha e", e);
       e.preventDefault(); // TODO: optimistically update page with new message,
       // update blockchain data in background
       // add uuid to each message, so we know which one is already known
 
       const input = e.target.elements.message;
-      input.disabled = true;
+      input.disabled = true; // Submits a new message
+
+      function doSubmitMessage(premium = false) {
+        let text = $('#text-message').val();
+        $('#text-message').val(''); // Calls the addMessage on the contract with arguments {text=text}.
+        // TODO: Refactor gas/amount args to be named
+
+        contract.addMessage({
+          text
+        }, BOATLOAD_OF_GAS, premium ? PREMIUM_COST : '0').then(() => {
+          // Starting refresh animation
+          $('#refresh-span').addClass(animateClass);
+          refreshMessages();
+        }).catch(console.error);
+      }
+
+      const BOATLOAD_OF_GAS = '10000000000000000';
+      const PREMIUM_COST = nearlib.utils.format.parseNearAmount('0.01');
       await contract.addMessage({
         text: input.value
-      });
+      }, BOATLOAD_OF_GAS, premium ? PREMIUM_COST : '0');
       const messages = await contract.getMessages();
       setMessages(messages);
       input.value = '';
@@ -52964,7 +52982,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "61758" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62791" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
