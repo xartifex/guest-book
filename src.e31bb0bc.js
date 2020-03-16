@@ -32673,6 +32673,7 @@ const App = ({
 }) => {
   const [messages, setMessages] = (0, _react.useState)([]);
   const [accountId, setAccountId] = (0, _react.useState)(wallet.getAccountId());
+  const [inputText, setInputText] = (0, _react.useState)("");
   (0, _react.useEffect)(() => {
     // TODO: don't just fetch once; subscribe!
     contract.getMessages().then(setMessages);
@@ -32688,6 +32689,17 @@ const App = ({
     contract.addPremiumMessage();
     e.preventDefault();
     console.log("honua", e);
+  });
+  const addMessage = (0, _react.useCallback)(async (text, isPremium) => {
+    const BOATLOAD_OF_GAS = '10000000000000000';
+    const PREMIUM_COST = '10000000000000000000000'; //nearlib.utils.format.parseNearAmount('0.01');
+    // await contract.addMessage({text}, BOATLOAD_OF_GAS, isPremium ? PREMIUM_COST : '0');
+
+    await contract.addMessage({
+      text
+    }, BOATLOAD_OF_GAS, isPremium ? PREMIUM_COST.toString() : '0');
+    const messages = await contract.getMessages();
+    setMessages(messages);
   });
   return _react.default.createElement("main", null, _react.default.createElement("header", {
     style: {
@@ -32709,6 +32721,8 @@ const App = ({
       // add uuid to each message, so we know which one is already known
 
       const input = e.target.elements.message;
+      console.log("hate this target", e.target);
+      console.log("hate this", e.target.elements);
       input.disabled = true; // Submits a new message
       // function doSubmitMessage(premium = false) {
       //     let text = $('#text-message').val();
@@ -32723,15 +32737,11 @@ const App = ({
       //         })
       //         .catch(console.error);
       // }
+      // await contract.addMessage({ text: input.value }, BOATLOAD_OF_GAS, premium ? PREMIUM_COST : '0')
+      // const messages = await contract.getMessages()
+      //
+      // setMessages(messages)
 
-      const BOATLOAD_OF_GAS = '10000000000000000';
-      const PREMIUM_COST = '10000000000000000000000'; //nearlib.utils.format.parseNearAmount('0.01');
-
-      await contract.addMessage({
-        text: input.value
-      }, BOATLOAD_OF_GAS, premium ? PREMIUM_COST : '0');
-      const messages = await contract.getMessages();
-      setMessages(messages);
       input.value = '';
       input.disabled = false;
       input.focus();
@@ -32745,6 +32755,10 @@ const App = ({
   }, _react.default.createElement("input", {
     autoComplete: "off",
     autoFocus: true,
+    value: inputText,
+    onChange: evt => {
+      setInputText(evt.target.value);
+    },
     id: "message",
     required: true,
     style: {
@@ -32754,12 +32768,25 @@ const App = ({
     type: "submit",
     style: {
       marginLeft: '0.5em'
+    },
+    onClick: e => {
+      console.log("aloha eee", e);
+      console.log("aloha eee", e.target); // addMessage(input.value, false)
+
+      addMessage(inputText, false);
+      e.stopPropagation();
     }
   }, "Save"), _react.default.createElement("button", {
     className: "primary",
     type: "submit",
     style: {
       marginLeft: '0.5em'
+    },
+    onClick: e => {
+      console.log("aloha eeeeeee", e);
+      console.log("aloha eeeeeee", e.target.elements);
+      addMessage(inputText, true);
+      e.stopPropagation(); // addMessage(input.value, true)
     }
   }, "Save & Donate"))), !!messages.length && _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("h2", null, "Messages"), messages.map((message, i) => // TODO: format as cards, add timestamp
   _react.default.createElement("p", {
@@ -53176,10 +53203,11 @@ async function initContract() {
     ...nearConfig
   }); // Needed to access wallet
   // const wallet = new nearlib.WalletAccount(near) // todo remove
+  // const walletConnection = new nearlib.WalletConnection(near, nearConfig.contractName);
 
-  const wallet = new WalletConnection(near, nearConfig.contractName); // Get Account ID – if still unauthorized, it's an empty string
+  const walletConnection = new nearlib.WalletConnection(near); // Get Account ID – if still unauthorized, it's an empty string
 
-  const accountId = wallet.getAccountId(); // Initializing our contract APIs by contract name and configuration
+  const accountId = walletConnection.getAccountId(); // Initializing our contract APIs by contract name and configuration
   // const acct = await new nearlib.Account(near.connection, accountId) // todo remove
 
   const contract = await new nearlib.Contract(walletConnection.account(), nearConfig.contractName, {
@@ -53193,19 +53221,19 @@ async function initContract() {
   return {
     contract,
     nearConfig,
-    wallet
+    walletConnection
   };
 }
 
 window.nearInitPromise = initContract().then(({
   contract,
   nearConfig,
-  wallet
+  walletConnection
 }) => {
   _reactDom.default.render(_react.default.createElement(_App.default, {
     contract: contract,
     nearConfig: nearConfig,
-    wallet: wallet
+    wallet: walletConnection
   }), document.getElementById('root'));
 });
 },{"react":"../node_modules/react/index.js","react-dom":"../node_modules/react-dom/index.js","./App":"App.js","./config.js":"config.js","nearlib":"../node_modules/nearlib/lib/index.js"}],"../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
@@ -53236,7 +53264,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "59247" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62166" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
