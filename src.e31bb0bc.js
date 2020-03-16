@@ -33376,202 +33376,6 @@ try {
   Function("r", "regeneratorRuntime = r")(runtime);
 }
 
-},{}],"App.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-var _react = _interopRequireWildcard(require("react"));
-
-var _propTypes = _interopRequireDefault(require("prop-types"));
-
-require("regenerator-runtime/runtime");
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
-
-const App = ({
-  contract,
-  nearConfig,
-  wallet
-}) => {
-  const [messages, setMessages] = (0, _react.useState)([]);
-  const [accountId, setAccountId] = (0, _react.useState)(wallet.getAccountId());
-  (0, _react.useEffect)(() => {
-    // TODO: don't just fetch once; subscribe!
-    contract.getMessages().then(setMessages);
-  }, []);
-  const signIn = (0, _react.useCallback)(() => {
-    wallet.requestSignIn(nearConfig.contractName, 'NEAR Guest Book');
-  }, []);
-  const signOut = (0, _react.useCallback)(() => {
-    wallet.signOut();
-    setAccountId(null);
-  }, []);
-  return _react.default.createElement("main", null, _react.default.createElement("header", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between'
-    }
-  }, _react.default.createElement("h1", null, "NEAR Guest Book"), accountId ? _react.default.createElement("button", {
-    onClick: signOut
-  }, "Log out") : _react.default.createElement("button", {
-    onClick: signIn
-  }, "Log in")), accountId && _react.default.createElement("form", {
-    onSubmit: async e => {
-      console.log("aloha e", e);
-      e.preventDefault(); // TODO: optimistically update page with new message,
-      // update blockchain data in background
-      // add uuid to each message, so we know which one is already known
-
-      const input = e.target.elements.message;
-      input.disabled = true; // Submits a new message
-      // function doSubmitMessage(premium = false) {
-      //     let text = $('#text-message').val();
-      //     $('#text-message').val('');
-      //     // Calls the addMessage on the contract with arguments {text=text}.
-      //     // TODO: Refactor gas/amount args to be named
-      //     contract.addMessage({text}, BOATLOAD_OF_GAS, premium ? PREMIUM_COST : '0')
-      //         .then(() => {
-      //             // Starting refresh animation
-      //             $('#refresh-span').addClass(animateClass);
-      //             refreshMessages();
-      //         })
-      //         .catch(console.error);
-      // }
-
-      const BOATLOAD_OF_GAS = '10000000000000000';
-      const PREMIUM_COST = nearlib.utils.format.parseNearAmount('0.01');
-      await contract.addMessage({
-        text: input.value
-      }, BOATLOAD_OF_GAS, premium ? PREMIUM_COST : '0');
-      const messages = await contract.getMessages();
-      setMessages(messages);
-      input.value = '';
-      input.disabled = false;
-      input.focus();
-    }
-  }, _react.default.createElement("label", {
-    htmlFor: "message"
-  }, "Sign the guest book, ", accountId, "!"), _react.default.createElement("div", {
-    style: {
-      display: 'flex'
-    }
-  }, _react.default.createElement("input", {
-    autoComplete: "off",
-    autoFocus: true,
-    id: "message",
-    required: true,
-    style: {
-      flex: 1
-    }
-  }), _react.default.createElement("button", {
-    type: "submit",
-    style: {
-      marginLeft: '0.5em'
-    }
-  }, "Save"), _react.default.createElement("button", {
-    className: "primary",
-    type: "submit",
-    style: {
-      marginLeft: '0.5em'
-    }
-  }, "Save & Donate"))), !!messages.length && _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("h2", null, "Messages"), messages.map((message, i) => // TODO: format as cards, add timestamp
-  _react.default.createElement("p", {
-    key: i
-  }, _react.default.createElement("strong", null, message.sender), ":", _react.default.createElement("br", null), message.text))));
-};
-
-App.propTypes = {
-  contract: _propTypes.default.shape({
-    addMessage: _propTypes.default.func.isRequired,
-    getMessages: _propTypes.default.func.isRequired
-  }).isRequired,
-  nearConfig: _propTypes.default.shape({
-    contractName: _propTypes.default.string.isRequired
-  }).isRequired,
-  wallet: _propTypes.default.shape({
-    getAccountId: _propTypes.default.func.isRequired,
-    isSignedIn: _propTypes.default.func.isRequired,
-    requestSignIn: _propTypes.default.func.isRequired,
-    signOut: _propTypes.default.func.isRequired
-  }).isRequired
-};
-var _default = App;
-exports.default = _default;
-},{"react":"../node_modules/react/index.js","prop-types":"../node_modules/prop-types/index.js","regenerator-runtime/runtime":"../node_modules/regenerator-runtime/runtime.js"}],"config.js":[function(require,module,exports) {
-// console.log("aloha", process.env.CONTRACT_NAME);
-const CONTRACT_NAME = undefined || 'artist';
-console.log("aloha", CONTRACT_NAME);
-
-function getConfig(env) {
-  switch (env) {
-    case 'production':
-    case 'development':
-      return {
-        networkId: 'default',
-        nodeUrl: 'https://rpc.nearprotocol.com',
-        contractName: CONTRACT_NAME,
-        walletUrl: 'https://wallet.nearprotocol.com',
-        helperUrl: 'https://near-contract-helper.onrender.com'
-      };
-
-    case 'staging':
-      return {
-        networkId: 'staging',
-        nodeUrl: 'https://staging-rpc.nearprotocol.com/',
-        contractName: CONTRACT_NAME,
-        walletUrl: 'https://near-wallet-staging.onrender.com',
-        helperUrl: 'https://near-contract-helper-staging.onrender.com'
-      };
-
-    case 'local':
-      return {
-        networkId: 'local',
-        nodeUrl: 'http://localhost:3030',
-        keyPath: `${"/Users/mike"}/.near/validator_key.json`,
-        walletUrl: 'http://localhost:4000/wallet',
-        contractName: CONTRACT_NAME
-      };
-
-    case 'test':
-    case 'ci':
-      return {
-        networkId: 'shared-test',
-        nodeUrl: 'http://shared-test.nearprotocol.com:3030',
-        contractName: CONTRACT_NAME,
-        masterAccount: 'test.near'
-      };
-
-    case 'ci-staging':
-      return {
-        networkId: 'shared-test-staging',
-        nodeUrl: 'http://staging-shared-test.nearprotocol.com:3030',
-        contractName: CONTRACT_NAME,
-        masterAccount: 'test.near'
-      };
-
-    case 'tatooine':
-      return {
-        networkId: 'tatooine',
-        nodeUrl: 'https://rpc.tatooine.nearprotocol.com',
-        contractName: CONTRACT_NAME,
-        walletUrl: 'https://wallet.tatooine.nearprotocol.com'
-      };
-
-    default:
-      throw Error(`Unconfigured environment '${env}'. Can be configured in src/config.js.`);
-  }
-}
-
-module.exports = getConfig;
 },{}],"../node_modules/base64-js/index.js":[function(require,module,exports) {
 'use strict'
 
@@ -53867,7 +53671,205 @@ const wallet_account_1 = require("./wallet-account");
 exports.WalletAccount = wallet_account_1.WalletAccount;
 exports.WalletConnection = wallet_account_1.WalletConnection;
 
-},{"./providers":"../node_modules/nearlib/lib/providers/index.js","./utils":"../node_modules/nearlib/lib/utils/index.js","./key_stores":"../node_modules/nearlib/lib/key_stores/index.js","./transaction":"../node_modules/nearlib/lib/transaction.js","./account":"../node_modules/nearlib/lib/account.js","./account_creator":"../node_modules/nearlib/lib/account_creator.js","./connection":"../node_modules/nearlib/lib/connection.js","./signer":"../node_modules/nearlib/lib/signer.js","./contract":"../node_modules/nearlib/lib/contract.js","./utils/key_pair":"../node_modules/nearlib/lib/utils/key_pair.js","./near":"../node_modules/nearlib/lib/near.js","./wallet-account":"../node_modules/nearlib/lib/wallet-account.js"}],"index.js":[function(require,module,exports) {
+},{"./providers":"../node_modules/nearlib/lib/providers/index.js","./utils":"../node_modules/nearlib/lib/utils/index.js","./key_stores":"../node_modules/nearlib/lib/key_stores/index.js","./transaction":"../node_modules/nearlib/lib/transaction.js","./account":"../node_modules/nearlib/lib/account.js","./account_creator":"../node_modules/nearlib/lib/account_creator.js","./connection":"../node_modules/nearlib/lib/connection.js","./signer":"../node_modules/nearlib/lib/signer.js","./contract":"../node_modules/nearlib/lib/contract.js","./utils/key_pair":"../node_modules/nearlib/lib/utils/key_pair.js","./near":"../node_modules/nearlib/lib/near.js","./wallet-account":"../node_modules/nearlib/lib/wallet-account.js"}],"App.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _react = _interopRequireWildcard(require("react"));
+
+var _propTypes = _interopRequireDefault(require("prop-types"));
+
+require("regenerator-runtime/runtime");
+
+require("nearlib");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return null; var cache = new WeakMap(); _getRequireWildcardCache = function () { return cache; }; return cache; }
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
+
+const App = ({
+  contract,
+  nearConfig,
+  wallet
+}) => {
+  const [messages, setMessages] = (0, _react.useState)([]);
+  const [accountId, setAccountId] = (0, _react.useState)(wallet.getAccountId());
+  (0, _react.useEffect)(() => {
+    // TODO: don't just fetch once; subscribe!
+    contract.getMessages().then(setMessages);
+  }, []);
+  const signIn = (0, _react.useCallback)(() => {
+    wallet.requestSignIn(nearConfig.contractName, 'NEAR Guest Book');
+  }, []);
+  const signOut = (0, _react.useCallback)(() => {
+    wallet.signOut();
+    setAccountId(null);
+  }, []);
+  return _react.default.createElement("main", null, _react.default.createElement("header", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between'
+    }
+  }, _react.default.createElement("h1", null, "NEAR Guest Book"), accountId ? _react.default.createElement("button", {
+    onClick: signOut
+  }, "Log out") : _react.default.createElement("button", {
+    onClick: signIn
+  }, "Log in")), accountId && _react.default.createElement("form", {
+    onSubmit: async e => {
+      console.log("aloha e", e);
+      e.preventDefault(); // TODO: optimistically update page with new message,
+      // update blockchain data in background
+      // add uuid to each message, so we know which one is already known
+
+      const input = e.target.elements.message;
+      input.disabled = true; // Submits a new message
+      // function doSubmitMessage(premium = false) {
+      //     let text = $('#text-message').val();
+      //     $('#text-message').val('');
+      //     // Calls the addMessage on the contract with arguments {text=text}.
+      //     // TODO: Refactor gas/amount args to be named
+      //     contract.addMessage({text}, BOATLOAD_OF_GAS, premium ? PREMIUM_COST : '0')
+      //         .then(() => {
+      //             // Starting refresh animation
+      //             $('#refresh-span').addClass(animateClass);
+      //             refreshMessages();
+      //         })
+      //         .catch(console.error);
+      // }
+
+      const BOATLOAD_OF_GAS = '10000000000000000';
+      const PREMIUM_COST = nearlib.utils.format.parseNearAmount('0.01');
+      await contract.addMessage({
+        text: input.value
+      }, BOATLOAD_OF_GAS, premium ? PREMIUM_COST : '0');
+      const messages = await contract.getMessages();
+      setMessages(messages);
+      input.value = '';
+      input.disabled = false;
+      input.focus();
+    }
+  }, _react.default.createElement("label", {
+    htmlFor: "message"
+  }, "Sign the guest book, ", accountId, "!"), _react.default.createElement("div", {
+    style: {
+      display: 'flex'
+    }
+  }, _react.default.createElement("input", {
+    autoComplete: "off",
+    autoFocus: true,
+    id: "message",
+    required: true,
+    style: {
+      flex: 1
+    }
+  }), _react.default.createElement("button", {
+    type: "submit",
+    style: {
+      marginLeft: '0.5em'
+    }
+  }, "Save"), _react.default.createElement("button", {
+    className: "primary",
+    type: "submit",
+    style: {
+      marginLeft: '0.5em'
+    }
+  }, "Save & Donate"))), !!messages.length && _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("h2", null, "Messages"), messages.map((message, i) => // TODO: format as cards, add timestamp
+  _react.default.createElement("p", {
+    key: i
+  }, _react.default.createElement("strong", null, message.sender), ":", _react.default.createElement("br", null), message.text))));
+};
+
+App.propTypes = {
+  contract: _propTypes.default.shape({
+    addMessage: _propTypes.default.func.isRequired,
+    getMessages: _propTypes.default.func.isRequired
+  }).isRequired,
+  nearConfig: _propTypes.default.shape({
+    contractName: _propTypes.default.string.isRequired
+  }).isRequired,
+  wallet: _propTypes.default.shape({
+    getAccountId: _propTypes.default.func.isRequired,
+    isSignedIn: _propTypes.default.func.isRequired,
+    requestSignIn: _propTypes.default.func.isRequired,
+    signOut: _propTypes.default.func.isRequired
+  }).isRequired
+};
+var _default = App;
+exports.default = _default;
+},{"react":"../node_modules/react/index.js","prop-types":"../node_modules/prop-types/index.js","regenerator-runtime/runtime":"../node_modules/regenerator-runtime/runtime.js","nearlib":"../node_modules/nearlib/lib/index.js"}],"config.js":[function(require,module,exports) {
+// console.log("aloha", process.env.CONTRACT_NAME);
+const CONTRACT_NAME = undefined || 'artist';
+console.log("aloha", CONTRACT_NAME);
+
+function getConfig(env) {
+  switch (env) {
+    case 'production':
+    case 'development':
+      return {
+        networkId: 'default',
+        nodeUrl: 'https://rpc.nearprotocol.com',
+        contractName: CONTRACT_NAME,
+        walletUrl: 'https://wallet.nearprotocol.com',
+        helperUrl: 'https://near-contract-helper.onrender.com'
+      };
+
+    case 'staging':
+      return {
+        networkId: 'staging',
+        nodeUrl: 'https://staging-rpc.nearprotocol.com/',
+        contractName: CONTRACT_NAME,
+        walletUrl: 'https://near-wallet-staging.onrender.com',
+        helperUrl: 'https://near-contract-helper-staging.onrender.com'
+      };
+
+    case 'local':
+      return {
+        networkId: 'local',
+        nodeUrl: 'http://localhost:3030',
+        keyPath: `${"/Users/mike"}/.near/validator_key.json`,
+        walletUrl: 'http://localhost:4000/wallet',
+        contractName: CONTRACT_NAME
+      };
+
+    case 'test':
+    case 'ci':
+      return {
+        networkId: 'shared-test',
+        nodeUrl: 'http://shared-test.nearprotocol.com:3030',
+        contractName: CONTRACT_NAME,
+        masterAccount: 'test.near'
+      };
+
+    case 'ci-staging':
+      return {
+        networkId: 'shared-test-staging',
+        nodeUrl: 'http://staging-shared-test.nearprotocol.com:3030',
+        contractName: CONTRACT_NAME,
+        masterAccount: 'test.near'
+      };
+
+    case 'tatooine':
+      return {
+        networkId: 'tatooine',
+        nodeUrl: 'https://rpc.tatooine.nearprotocol.com',
+        contractName: CONTRACT_NAME,
+        walletUrl: 'https://wallet.tatooine.nearprotocol.com'
+      };
+
+    default:
+      throw Error(`Unconfigured environment '${env}'. Can be configured in src/config.js.`);
+  }
+}
+
+module.exports = getConfig;
+},{}],"index.js":[function(require,module,exports) {
 "use strict";
 
 var _react = _interopRequireDefault(require("react"));
@@ -53956,7 +53958,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50390" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53403" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
