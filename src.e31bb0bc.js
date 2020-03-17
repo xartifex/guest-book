@@ -32675,11 +32675,9 @@ const App = ({
   const [accountId, setAccountId] = (0, _react.useState)(wallet.getAccountId());
   const [inputText, setInputText] = (0, _react.useState)('');
   const [inputReadOnly, setinputReadOnly] = (0, _react.useState)(false);
-  const inputRef = (0, _react.useRef)(null);
   (0, _react.useEffect)(() => {
     // TODO: don't just fetch once; subscribe!
     contract.getMessages().then(setMessages);
-    inputRef.current.focus();
   }, []);
   const signIn = (0, _react.useCallback)(() => {
     wallet.requestSignIn(nearConfig.contractName, 'NEAR Guest Book');
@@ -32723,8 +32721,8 @@ const App = ({
       display: 'flex'
     }
   }, _react.default.createElement("input", {
-    ref: inputRef,
     autoComplete: "off",
+    autoFocus: true,
     value: inputText,
     onChange: e => {
       setInputText(e.target.value);
@@ -53224,7 +53222,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "64558" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "58981" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
