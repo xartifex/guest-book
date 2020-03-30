@@ -27,6 +27,8 @@ module.exports = {
     '@typescript-eslint'
   ],
   rules: {
+    // workaround: https://github.com/typescript-eslint/typescript-eslint/issues/46#issuecomment-470486034
+    '@typescript-eslint/no-unused-vars': [2, { args: 'none' }]
   },
   settings: {
     react: {

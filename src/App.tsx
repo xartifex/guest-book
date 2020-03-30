@@ -1,7 +1,21 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import PropTypes from 'prop-types'
+import { WalletConnection } from 'nearlib'
 
-const App = ({ contract, nearConfig, wallet }) => {
+// is this a bad idea?
+import { PostedMessage } from '../assembly/model'
+
+type AppProps = {
+  contract: {
+    addMessage: ({ text }: { text: string }, gas?: string, amount?: string) => Promise<void>
+    getMessages: () => Promise<PostedMessage[]>
+  }
+  nearConfig: { // TODO: get this from config.ts
+    contractName: string
+  }
+  wallet: WalletConnection
+}
+
+const App = ({ contract, nearConfig, wallet }: AppProps) => {
   const [messages, setMessages] = useState([])
   const [accountId, setAccountId] = useState(wallet.getAccountId())
   const [inputText, setInputText] = useState('')
@@ -9,11 +23,13 @@ const App = ({ contract, nearConfig, wallet }) => {
 
   useEffect(() => {
     // TODO: don't just fetch once; subscribe!
-    contract.getMessages().then(setMessages)
+    contract.getMessages().then(messages => {
+      setMessages(messages)
+    })
   }, [])
 
   const signIn = useCallback(() => {
-    wallet.requestSignIn(
+    wallet.requestSignIn( // TODO: fix requestSignIn signature in nearlib
       nearConfig.contractName,
       'NEAR Guest Book'
     )
@@ -33,7 +49,7 @@ const App = ({ contract, nearConfig, wallet }) => {
     const messages = await contract.getMessages()
     setMessages(messages)
     setinputReadOnly(false)
-  })
+  }, [])
 
   return (
     <main>
@@ -92,22 +108,6 @@ const App = ({ contract, nearConfig, wallet }) => {
       )}
     </main>
   )
-}
-
-App.propTypes = {
-  contract: PropTypes.shape({
-    addMessage: PropTypes.func.isRequired,
-    getMessages: PropTypes.func.isRequired
-  }).isRequired,
-  nearConfig: PropTypes.shape({
-    contractName: PropTypes.string.isRequired
-  }).isRequired,
-  wallet: PropTypes.shape({
-    getAccountId: PropTypes.func.isRequired,
-    isSignedIn: PropTypes.func.isRequired,
-    requestSignIn: PropTypes.func.isRequired,
-    signOut: PropTypes.func.isRequired
-  }).isRequired
 }
 
 export default App
