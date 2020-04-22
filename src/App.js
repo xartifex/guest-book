@@ -3,7 +3,6 @@ import PropTypes from 'prop-types'
 import Big from 'big.js'
 import { v4 as uuid } from 'uuid'
 import useSmartContract from './useSmartContract'
-import LoadingMessage from './LoadingMessage'
 
 const SUGGESTED_DONATION = '1'
 
@@ -82,7 +81,6 @@ const App = ({ contract, currentUser, nearConfig, wallet }) => {
           </button>
         </form>
       )}
-      {!messages && <LoadingMessage />}
       {messages && !!messages.length && (
         <>
           <h2>Messages</h2>
