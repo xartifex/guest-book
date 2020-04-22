@@ -1,0 +1,27 @@
+.Loader {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.5em;
+  --line-width: 0.1em;
+}
+
+.Loader:after {
+  content: " ";
+  display: block;
+  width: calc(100% - calc(2 * var(--line-width)));
+  height: calc(100% - calc(2 * var(--line-width)));
+  border-radius: 50%;
+  border: var(--line-width) solid #888;
+  border-color: transparent #888 #888 #888;
+  animation: Loader 1s linear infinite;
+}
+
+@keyframes Loader {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
