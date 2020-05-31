@@ -3,24 +3,59 @@ import React, { useCallback } from 'react'
 import PropTypes from 'prop-types'
 import Big from 'big.js'
 import { ulid } from 'ulid'
-import useSmartContract from './useSmartContract'
+import useCachedUpdater from './useCachedUpdater'
+import useSubscribedGetter from './useSubscribedGetter'
 
 const SUGGESTED_DONATION = '1'
+const BOATLOAD_OF_GAS = Big(1).times(10 ** 16).toFixed()
 
 const App = ({ contract, currentUser, nearConfig, wallet }) => {
-  const { messages, addMessage } = useSmartContract(contract)
+  const [
+    addMessage,
+    syncingMessages,
+    updateSyncingMessages
+  ] = useCachedUpdater(
+    contract.addMessage,
+    {
+      initialCacheValue: {},
+      onFunctionCall: (cache, { id, ...message }) => {
+        const newCache = { ...cache, [id]: message }
+        return newCache
+      },
+      onError: (cache, error, { id, ...message }) => {
+        const messages = [...cache]
+        messages[id].error = error.message
+        updateSyncingMessages(messages)
+      }
+    }
+  )
+
+  const persistedMessages = useSubscribedGetter(contract.getMessages, {
+    initialValue: {},
+    onUpdate: persistedMessages => {
+      const newSyncingMessages = { ...syncingMessages }
+      Object.keys(persistedMessages).forEach(id => {
+        delete newSyncingMessages[id]
+      })
+      updateSyncingMessages(newSyncingMessages)
+    }
+  })
 
   const onSubmit = useCallback(e => {
     e.preventDefault()
 
     const { message, donation } = e.target.elements
 
-    addMessage({
-      id: ulid(),
-      text: message.value,
-      sender: currentUser.accountId,
-      donation: donation.value || 0
-    })
+    addMessage(
+      {
+        id: ulid(),
+        text: message.value,
+        sender: currentUser.accountId,
+        donation: donation.value || 0
+      },
+      BOATLOAD_OF_GAS,
+      Big(donation.value || '0').times(10 ** 24).toFixed()
+    )
 
     message.value = ''
     donation.value = SUGGESTED_DONATION
@@ -82,24 +117,55 @@ const App = ({ contract, currentUser, nearConfig, wallet }) => {
           </button>
         </form>
       )}
-      {messages && !!Object.keys(messages).length && (
-        <>
-          <h2>Messages</h2>
-          {Object.keys(messages).map(id =>
-            // TODO: format as cards, add timestamp
-            <p key={id} className={messages[id].premium ? 'is-premium' : ''}>
-              <strong>{messages[id].sender}</strong>:<br/>
-              {messages[id].text}
-            </p>
-          )}
-        </>
+      {(!!Object.keys(persistedMessages).length || !!Object.keys(syncingMessages).length) && (
+        <h2>Messages</h2>
       )}
+      {Object.keys(persistedMessages).map(id => (
+        // TODO: format as cards, add timestamp
+        <p key={id} className={persistedMessages[id].premium ? 'is-premium' : ''}>
+          <strong>{persistedMessages[id].sender}</strong>:<br/>
+          {persistedMessages[id].text}
+        </p>
+      ))}
+      {Object.keys(syncingMessages).map(id => {
+        const message = syncingMessages[id]
+        return (
+          <p key={id} style={{ color: 'gray' }}>
+            <strong>{message.sender}</strong>:<br/>
+            {message.text}
+            {message.error && (
+              <>
+                <br />
+                <span style={{ color: 'var(--red)' }}>
+                  Syncing failed! {message.error}
+                </span>
+                <br />
+                <button onClick={() => {
+                  const messages = { ...syncingMessages }
+                  delete messages[id].error
+                  updateSyncingMessages(messages)
+                  contract.addMessage(
+                    message,
+                    BOATLOAD_OF_GAS,
+                    Big(message.donation).times(10 ** 24).toFixed()
+                  )
+                }}>
+                  Retry
+                </button>
+              </>
+            )}
+          </p>
+        )
+      })}
     </main>
   )
 }
 
 App.propTypes = {
-  contract: PropTypes.object.isRequired,
+  contract: PropTypes.shape({
+    addMessage: PropTypes.func.isRequired,
+    getMessages: PropTypes.func.isRequired
+  }).isRequired,
   currentUser: PropTypes.shape({
     accountId: PropTypes.string.isRequired,
     balance: PropTypes.string.isRequired
