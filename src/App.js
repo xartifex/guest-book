@@ -3,8 +3,7 @@ import React, { useCallback } from 'react'
 import PropTypes from 'prop-types'
 import Big from 'big.js'
 import { ulid } from 'ulid'
-import useCachedUpdater from './useCachedUpdater'
-import useSubscribedGetter from './useSubscribedGetter'
+import { useCachedUpdater, useSubscribedGetter } from 'react-offline-first-helpers'
 
 const SUGGESTED_DONATION = '1'
 const BOATLOAD_OF_GAS = Big(1).times(10 ** 16).toFixed()

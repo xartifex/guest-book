@@ -43,10 +43,10 @@
   "dependencies": {
     "big.js": "^5.2.2",
     "env-cmd": "^10.1.0",
-    "lodash": "^4.17.15",
     "near-api-js": "^0.25.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
+    "react-offline-first-helpers": "^1.0.0",
     "regenerator-runtime": "^0.13.5",
     "ulid": "^2.3.0"
   },
