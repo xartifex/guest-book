@@ -30953,7 +30953,7 @@ App.propTypes = {
 var _default = App;
 exports.default = _default;
 },{"regenerator-runtime/runtime":"../node_modules/regenerator-runtime/runtime.js","react":"../node_modules/react/index.js","prop-types":"../node_modules/prop-types/index.js","big.js":"../node_modules/big.js/big.js"}],"config.js":[function(require,module,exports) {
-const CONTRACT_NAME = undefined || 'guest-book.testnet';
+const CONTRACT_NAME = "dev-1595279851461-7474850" || 'guest-book.testnet';
 
 function getConfig(env) {
   switch (env) {
@@ -52214,7 +52214,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "64861" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "59025" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
