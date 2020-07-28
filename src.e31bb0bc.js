@@ -52135,7 +52135,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 // Initializing contract
 async function initContract() {
-  const nearConfig = (0, _config.default)("development" || 'testnet'); // Initializing connection to the NEAR TestNet
+  const nearConfig = (0, _config.default)("development" || 'testnet');
+  console.log('PAY ATTENTION!!!!', "development"); // Initializing connection to the NEAR TestNet
 
   const near = await nearAPI.connect({
     deps: {
@@ -52214,7 +52215,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "59025" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "49357" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
